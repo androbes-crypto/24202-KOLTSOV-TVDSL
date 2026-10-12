@@ -142,6 +142,21 @@ def hopcroft(d: DFA) -> DFA:
     return DFA(delta, label, 0, new_id[block_of[d.trap]])
 
 
+def equivalent(d1: DFA, d2: DFA) -> bool:
+    seen = {(d1.start, d2.start)}
+    q = deque(seen)
+    while q:
+        s1, s2 = q.popleft()
+        if d1.label[s1] != d2.label[s2]:
+            return False
+        for a in range(d1.k):
+            p = (d1.delta[s1][a], d2.delta[s2][a])
+            if p not in seen:
+                seen.add(p)
+                q.append(p)
+    return True
+
+
 def run(d: DFA, char_to_class: list[int], text: str) -> int:
     s = d.start
     for ch in text:
