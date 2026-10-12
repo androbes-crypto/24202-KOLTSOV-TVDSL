@@ -21,7 +21,6 @@ def cmd_build(args) -> int:
     print(f"[build] spec: {args.spec}  ->  {args.out}/")
     print(f"  tokens:                 {st['tokens']}")
     print(f"  NFA states (Thompson):  {st['nfa_states']}")
-    print(f"  symbol classes:         {st['symbol_classes']} (incl. NON_ASCII)")
     print(f"  DFA states (subset):    {st['dfa_states_before_min']}  (incl. trap; accepting: {st['dfa_accepting_before_min']})")
     print(f"  DFA states (Hopcroft):  {st['dfa_states_after_min']}  (incl. trap; accepting: {st['dfa_accepting_after_min']})")
     print(f"  trap state:             {st['trap_state']}")
