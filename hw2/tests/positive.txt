@@ -1,0 +1,870 @@
+=== минимальная функция
+function main() returns ()
+{
+}
+--- ожидается
+Program @1:1
+  functions:
+    Function name="main" @1:1
+      params: []
+      returns: []
+      requires: []
+      ensures: []
+      body:
+        Block @2:1
+          stmts: []
+
+=== while с invariant, requires/ensures, var
+function sum(a: int[], n: int) returns (s: int)
+  requires n >= 0 && n <= length(a)
+  ensures s >= 0
+{
+  var i: int = 0;
+  s = 0;
+  while (i < n)
+    invariant 0 <= i && i <= n
+  {
+    s = s + a[i];
+    i = i + 1;
+  }
+}
+--- ожидается
+Program @1:1
+  functions:
+    Function name="sum" @1:1
+      params:
+        Param name="a" type="int[]" @1:14
+        Param name="n" type="int" @1:24
+      returns:
+        Param name="s" type="int" @1:41
+      requires:
+        Binary op="&&" @2:19
+          left:
+            Binary op=">=" @2:14
+              left:
+                Var name="n" @2:12
+              right:
+                Int value=0 @2:17
+          right:
+            Binary op="<=" @2:24
+              left:
+                Var name="n" @2:22
+              right:
+                Length @2:27
+                  array:
+                    Var name="a" @2:34
+      ensures:
+        Binary op=">=" @3:13
+          left:
+            Var name="s" @3:11
+          right:
+            Int value=0 @3:16
+      body:
+        Block @4:1
+          stmts:
+            VarDecl name="i" type="int" @5:3
+              init:
+                Int value=0 @5:16
+            Assign target="s" @6:5
+              value:
+                Int value=0 @6:7
+            While @7:3
+              cond:
+                Binary op="<" @7:12
+                  left:
+                    Var name="i" @7:10
+                  right:
+                    Var name="n" @7:14
+              invariants:
+                Binary op="&&" @8:22
+                  left:
+                    Binary op="<=" @8:17
+                      left:
+                        Int value=0 @8:15
+                      right:
+                        Var name="i" @8:20
+                  right:
+                    Binary op="<=" @8:27
+                      left:
+                        Var name="i" @8:25
+                      right:
+                        Var name="n" @8:30
+              body:
+                Block @9:3
+                  stmts:
+                    Assign target="s" @10:7
+                      value:
+                        Binary op="+" @10:11
+                          left:
+                            Var name="s" @10:9
+                          right:
+                            Index @10:14
+                              array:
+                                Var name="a" @10:13
+                              index:
+                                Var name="i" @10:15
+                    Assign target="i" @11:7
+                      value:
+                        Binary op="+" @11:11
+                          left:
+                            Var name="i" @11:9
+                          right:
+                            Int value=1 @11:13
+
+=== цепочка if / else if / else
+function sign(x: int) returns (s: int)
+  ensures s == -1 || s == 0 || s == 1
+{
+  if (x > 0) {
+    s = 1;
+  } else if (x == 0) {
+    s = 0;
+  } else {
+    s = -1;
+  }
+}
+--- ожидается
+Program @1:1
+  functions:
+    Function name="sign" @1:1
+      params:
+        Param name="x" type="int" @1:15
+      returns:
+        Param name="s" type="int" @1:32
+      requires: []
+      ensures:
+        Binary op="||" @2:29
+          left:
+            Binary op="||" @2:19
+              left:
+                Binary op="==" @2:13
+                  left:
+                    Var name="s" @2:11
+                  right:
+                    Unary op="-" @2:16
+                      operand:
+                        Int value=1 @2:17
+              right:
+                Binary op="==" @2:24
+                  left:
+                    Var name="s" @2:22
+                  right:
+                    Int value=0 @2:27
+          right:
+            Binary op="==" @2:34
+              left:
+                Var name="s" @2:32
+              right:
+                Int value=1 @2:37
+      body:
+        Block @3:1
+          stmts:
+            If @4:3
+              cond:
+                Binary op=">" @4:9
+                  left:
+                    Var name="x" @4:7
+                  right:
+                    Int value=0 @4:11
+              then:
+                Block @4:14
+                  stmts:
+                    Assign target="s" @5:7
+                      value:
+                        Int value=1 @5:9
+              orelse:
+                If @6:10
+                  cond:
+                    Binary op="==" @6:16
+                      left:
+                        Var name="x" @6:14
+                      right:
+                        Int value=0 @6:19
+                  then:
+                    Block @6:22
+                      stmts:
+                        Assign target="s" @7:7
+                          value:
+                            Int value=0 @7:9
+                  orelse:
+                    Block @8:10
+                      stmts:
+                        Assign target="s" @9:7
+                          value:
+                            Unary op="-" @9:9
+                              operand:
+                                Int value=1 @9:10
+
+=== висячий else относится к ближайшему if
+function f(a: bool, b: bool) returns (x: int)
+{
+  x = 0;
+  if (a) if (b) x = 1; else x = 2;
+}
+--- ожидается
+Program @1:1
+  functions:
+    Function name="f" @1:1
+      params:
+        Param name="a" type="bool" @1:12
+        Param name="b" type="bool" @1:21
+      returns:
+        Param name="x" type="int" @1:39
+      requires: []
+      ensures: []
+      body:
+        Block @2:1
+          stmts:
+            Assign target="x" @3:5
+              value:
+                Int value=0 @3:7
+            If @4:3
+              cond:
+                Var name="a" @4:7
+              then:
+                If @4:10
+                  cond:
+                    Var name="b" @4:14
+                  then:
+                    Assign target="x" @4:19
+                      value:
+                        Int value=1 @4:21
+                  orelse:
+                    Assign target="x" @4:31
+                      value:
+                        Int value=2 @4:33
+
+=== обновление одномерного и двумерного массива
+function upd(a: int[], m: int[][], i: int, j: int) returns (b: int[], n: int[][])
+  requires 0 <= i && i < length(a)
+{
+  b = a;
+  b[i] = b[i] + 1;
+  n = m;
+  n[i][j] = 0;
+}
+--- ожидается
+Program @1:1
+  functions:
+    Function name="upd" @1:1
+      params:
+        Param name="a" type="int[]" @1:14
+        Param name="m" type="int[][]" @1:24
+        Param name="i" type="int" @1:36
+        Param name="j" type="int" @1:44
+      returns:
+        Param name="b" type="int[]" @1:61
+        Param name="n" type="int[][]" @1:71
+      requires:
+        Binary op="&&" @2:19
+          left:
+            Binary op="<=" @2:14
+              left:
+                Int value=0 @2:12
+              right:
+                Var name="i" @2:17
+          right:
+            Binary op="<" @2:24
+              left:
+                Var name="i" @2:22
+              right:
+                Length @2:26
+                  array:
+                    Var name="a" @2:33
+      ensures: []
+      body:
+        Block @3:1
+          stmts:
+            Assign target="b" @4:5
+              value:
+                Var name="a" @4:7
+            Assign target="b" sugar="array-update" @5:8
+              value:
+                Update @5:8
+                  array:
+                    Var name="b" @5:3
+                  index:
+                    Var name="i" @5:5
+                  value:
+                    Binary op="+" @5:15
+                      left:
+                        Index @5:11
+                          array:
+                            Var name="b" @5:10
+                          index:
+                            Var name="i" @5:12
+                      right:
+                        Int value=1 @5:17
+            Assign target="n" @6:5
+              value:
+                Var name="m" @6:7
+            Assign target="n" sugar="array-update" @7:11
+              value:
+                Update @7:11
+                  array:
+                    Var name="n" @7:3
+                  index:
+                    Var name="i" @7:5
+                  value:
+                    Update @7:11
+                      array:
+                        Index @7:11
+                          array:
+                            Var name="n" @7:3
+                          index:
+                            Var name="i" @7:5
+                      index:
+                        Var name="j" @7:8
+                      value:
+                        Int value=0 @7:13
+
+=== объявления переменных всех типов
+function decls() returns ()
+{
+  var x: int;
+  var y: int = 42;
+  var ok: bool = true;
+  var a: int[];
+  var flags: bool[];
+  x = y;
+}
+--- ожидается
+Program @1:1
+  functions:
+    Function name="decls" @1:1
+      params: []
+      returns: []
+      requires: []
+      ensures: []
+      body:
+        Block @2:1
+          stmts:
+            VarDecl name="x" type="int" @3:3
+            VarDecl name="y" type="int" @4:3
+              init:
+                Int value=42 @4:16
+            VarDecl name="ok" type="bool" @5:3
+              init:
+                Bool value=true @5:18
+            VarDecl name="a" type="int[]" @6:3
+            VarDecl name="flags" type="bool[]" @7:3
+            Assign target="x" @8:5
+              value:
+                Var name="y" @8:7
+
+=== приоритеты и ассоциативность операторов
+function prec(a: int[], b: int, c: int) returns (x: int, y: int, z: bool)
+{
+  x = 1 + 2 * 3 - 4 / 2 % 3;
+  y = 10 - 3 - 2;
+  x = -a[b] * (b + c);
+  z = !(x < y) && y >= 0 || false;
+  z = !!z;
+}
+--- ожидается
+Program @1:1
+  functions:
+    Function name="prec" @1:1
+      params:
+        Param name="a" type="int[]" @1:15
+        Param name="b" type="int" @1:25
+        Param name="c" type="int" @1:33
+      returns:
+        Param name="x" type="int" @1:50
+        Param name="y" type="int" @1:58
+        Param name="z" type="bool" @1:66
+      requires: []
+      ensures: []
+      body:
+        Block @2:1
+          stmts:
+            Assign target="x" @3:5
+              value:
+                Binary op="-" @3:17
+                  left:
+                    Binary op="+" @3:9
+                      left:
+                        Int value=1 @3:7
+                      right:
+                        Binary op="*" @3:13
+                          left:
+                            Int value=2 @3:11
+                          right:
+                            Int value=3 @3:15
+                  right:
+                    Binary op="%" @3:25
+                      left:
+                        Binary op="/" @3:21
+                          left:
+                            Int value=4 @3:19
+                          right:
+                            Int value=2 @3:23
+                      right:
+                        Int value=3 @3:27
+            Assign target="y" @4:5
+              value:
+                Binary op="-" @4:14
+                  left:
+                    Binary op="-" @4:10
+                      left:
+                        Int value=10 @4:7
+                      right:
+                        Int value=3 @4:12
+                  right:
+                    Int value=2 @4:16
+            Assign target="x" @5:5
+              value:
+                Binary op="*" @5:13
+                  left:
+                    Unary op="-" @5:7
+                      operand:
+                        Index @5:9
+                          array:
+                            Var name="a" @5:8
+                          index:
+                            Var name="b" @5:10
+                  right:
+                    Binary op="+" @5:18
+                      left:
+                        Var name="b" @5:16
+                      right:
+                        Var name="c" @5:20
+            Assign target="z" @6:5
+              value:
+                Binary op="||" @6:26
+                  left:
+                    Binary op="&&" @6:16
+                      left:
+                        Unary op="!" @6:7
+                          operand:
+                            Binary op="<" @6:11
+                              left:
+                                Var name="x" @6:9
+                              right:
+                                Var name="y" @6:13
+                      right:
+                        Binary op=">=" @6:21
+                          left:
+                            Var name="y" @6:19
+                          right:
+                            Int value=0 @6:24
+                  right:
+                    Bool value=false @6:29
+            Assign target="z" @7:5
+              value:
+                Unary op="!" @7:7
+                  operand:
+                    Unary op="!" @7:8
+                      operand:
+                        Var name="z" @7:9
+
+=== вызовы функций и length
+function max(a: int, b: int) returns (m: int)
+{
+  if (a > b) m = a; else m = b;
+}
+
+function main(arr: int[]) returns (r: int)
+{
+  r = max(length(arr), max(1, 2));
+  log(r);
+  noargs();
+}
+--- ожидается
+Program @1:1
+  functions:
+    Function name="max" @1:1
+      params:
+        Param name="a" type="int" @1:14
+        Param name="b" type="int" @1:22
+      returns:
+        Param name="m" type="int" @1:39
+      requires: []
+      ensures: []
+      body:
+        Block @2:1
+          stmts:
+            If @3:3
+              cond:
+                Binary op=">" @3:9
+                  left:
+                    Var name="a" @3:7
+                  right:
+                    Var name="b" @3:11
+              then:
+                Assign target="m" @3:16
+                  value:
+                    Var name="a" @3:18
+              orelse:
+                Assign target="m" @3:28
+                  value:
+                    Var name="b" @3:30
+    Function name="main" @6:1
+      params:
+        Param name="arr" type="int[]" @6:15
+      returns:
+        Param name="r" type="int" @6:36
+      requires: []
+      ensures: []
+      body:
+        Block @7:1
+          stmts:
+            Assign target="r" @8:5
+              value:
+                Call name="max" @8:7
+                  args:
+                    Length @8:11
+                      array:
+                        Var name="arr" @8:18
+                    Call name="max" @8:24
+                      args:
+                        Int value=1 @8:28
+                        Int value=2 @8:31
+            CallStmt @9:3
+              call:
+                Call name="log" @9:3
+                  args:
+                    Var name="r" @9:7
+            CallStmt @10:3
+              call:
+                Call name="noargs" @10:3
+                  args: []
+
+=== пустые requires и ensures
+function g(x: int) returns (y: int)
+  requires
+  ensures
+  requires x > 0
+{
+  y = x;
+}
+--- ожидается
+Program @1:1
+  functions:
+    Function name="g" @1:1
+      params:
+        Param name="x" type="int" @1:12
+      returns:
+        Param name="y" type="int" @1:29
+      requires:
+        Binary op=">" @4:14
+          left:
+            Var name="x" @4:12
+          right:
+            Int value=0 @4:16
+      ensures: []
+      body:
+        Block @5:1
+          stmts:
+            Assign target="y" @6:5
+              value:
+                Var name="x" @6:7
+
+=== CRLF, комментарии и табуляция [crlf]
+function one() returns (r: int) // CRLF line endings
+{
+  r = 1; // comment
+}
+
+function two() returns (r: int)
+{
+	r = one() + one();
+}
+--- ожидается
+Program @1:1
+  functions:
+    Function name="one" @1:1
+      params: []
+      returns:
+        Param name="r" type="int" @1:25
+      requires: []
+      ensures: []
+      body:
+        Block @2:1
+          stmts:
+            Assign target="r" @3:5
+              value:
+                Int value=1 @3:7
+    Function name="two" @6:1
+      params: []
+      returns:
+        Param name="r" type="int" @6:25
+      requires: []
+      ensures: []
+      body:
+        Block @7:1
+          stmts:
+            Assign target="r" @8:4
+              value:
+                Binary op="+" @8:12
+                  left:
+                    Call name="one" @8:6
+                      args: []
+                  right:
+                    Call name="one" @8:14
+                      args: []
+
+=== вложенные блоки, assert, assume
+function check(n: int) returns ()
+{
+  assume n >= 0;
+  {
+    var k: int = n;
+    {
+      assert k >= 0;
+    }
+  }
+  while (n > 0) n = n - 1;
+  assert n == 0;
+}
+--- ожидается
+Program @1:1
+  functions:
+    Function name="check" @1:1
+      params:
+        Param name="n" type="int" @1:16
+      returns: []
+      requires: []
+      ensures: []
+      body:
+        Block @2:1
+          stmts:
+            Assume @3:3
+              cond:
+                Binary op=">=" @3:12
+                  left:
+                    Var name="n" @3:10
+                  right:
+                    Int value=0 @3:15
+            Block @4:3
+              stmts:
+                VarDecl name="k" type="int" @5:5
+                  init:
+                    Var name="n" @5:18
+                Block @6:5
+                  stmts:
+                    Assert @7:7
+                      cond:
+                        Binary op=">=" @7:16
+                          left:
+                            Var name="k" @7:14
+                          right:
+                            Int value=0 @7:19
+            While @10:3
+              cond:
+                Binary op=">" @10:12
+                  left:
+                    Var name="n" @10:10
+                  right:
+                    Int value=0 @10:14
+              invariants: []
+              body:
+                Assign target="n" @10:19
+                  value:
+                    Binary op="-" @10:23
+                      left:
+                        Var name="n" @10:21
+                      right:
+                        Int value=1 @10:25
+            Assert @11:3
+              cond:
+                Binary op="==" @11:12
+                  left:
+                    Var name="n" @11:10
+                  right:
+                    Int value=0 @11:15
+
+=== пример из P02: параметры без типов, returns без скобок
+function f(x, y) returns r { r = x + y; // comment
+ if (r > 0) { assert r == x + y; } }
+--- ожидается
+Program @1:1
+  functions:
+    Function name="f" @1:1
+      params:
+        Param name="x" @1:12
+        Param name="y" @1:15
+      returns:
+        Param name="r" @1:26
+      requires: []
+      ensures: []
+      body:
+        Block @1:28
+          stmts:
+            Assign target="r" @1:32
+              value:
+                Binary op="+" @1:36
+                  left:
+                    Var name="x" @1:34
+                  right:
+                    Var name="y" @1:38
+            If @2:2
+              cond:
+                Binary op=">" @2:8
+                  left:
+                    Var name="r" @2:6
+                  right:
+                    Int value=0 @2:10
+              then:
+                Block @2:13
+                  stmts:
+                    Assert @2:15
+                      cond:
+                        Binary op="==" @2:24
+                          left:
+                            Var name="r" @2:22
+                          right:
+                            Binary op="+" @2:29
+                              left:
+                                Var name="x" @2:27
+                              right:
+                                Var name="y" @2:31
+
+=== пример из P02: add
+function add(x,y) returns r { r = x + y; // sum
+}
+--- ожидается
+Program @1:1
+  functions:
+    Function name="add" @1:1
+      params:
+        Param name="x" @1:14
+        Param name="y" @1:16
+      returns:
+        Param name="r" @1:27
+      requires: []
+      ensures: []
+      body:
+        Block @1:29
+          stmts:
+            Assign target="r" @1:33
+              value:
+                Binary op="+" @1:37
+                  left:
+                    Var name="x" @1:35
+                  right:
+                    Var name="y" @1:39
+
+=== пример из P03: типы через двоеточие без пробелов
+function f(x:int) returns r:int { r = x + 1; }
+--- ожидается
+Program @1:1
+  functions:
+    Function name="f" @1:1
+      params:
+        Param name="x" type="int" @1:12
+      returns:
+        Param name="r" type="int" @1:27
+      requires: []
+      ensures: []
+      body:
+        Block @1:33
+          stmts:
+            Assign target="r" @1:37
+              value:
+                Binary op="+" @1:41
+                  left:
+                    Var name="x" @1:39
+                  right:
+                    Int value=1 @1:43
+
+=== пример из P04: приоритет * над +
+function f(x) returns r { r = x + 2 * 3; }
+--- ожидается
+Program @1:1
+  functions:
+    Function name="f" @1:1
+      params:
+        Param name="x" @1:12
+      returns:
+        Param name="r" @1:23
+      requires: []
+      ensures: []
+      body:
+        Block @1:25
+          stmts:
+            Assign target="r" @1:29
+              value:
+                Binary op="+" @1:33
+                  left:
+                    Var name="x" @1:31
+                  right:
+                    Binary op="*" @1:37
+                      left:
+                        Int value=2 @1:35
+                      right:
+                        Int value=3 @1:39
+
+=== пример из P03: висячий else
+function f(a, b) returns r { if (a) if (b) r=1; else r=2; }
+--- ожидается
+Program @1:1
+  functions:
+    Function name="f" @1:1
+      params:
+        Param name="a" @1:12
+        Param name="b" @1:15
+      returns:
+        Param name="r" @1:26
+      requires: []
+      ensures: []
+      body:
+        Block @1:28
+          stmts:
+            If @1:30
+              cond:
+                Var name="a" @1:34
+              then:
+                If @1:37
+                  cond:
+                    Var name="b" @1:41
+                  then:
+                    Assign target="r" @1:45
+                      value:
+                        Int value=1 @1:46
+                  orelse:
+                    Assign target="r" @1:55
+                      value:
+                        Int value=2 @1:56
+
+=== несколько результатов без скобок
+function divmod(a: int, b: int) returns q: int, r: int
+  requires b > 0
+{
+  q = a / b;
+  r = a % b;
+}
+--- ожидается
+Program @1:1
+  functions:
+    Function name="divmod" @1:1
+      params:
+        Param name="a" type="int" @1:17
+        Param name="b" type="int" @1:25
+      returns:
+        Param name="q" type="int" @1:41
+        Param name="r" type="int" @1:49
+      requires:
+        Binary op=">" @2:14
+          left:
+            Var name="b" @2:12
+          right:
+            Int value=0 @2:16
+      ensures: []
+      body:
+        Block @3:1
+          stmts:
+            Assign target="q" @4:5
+              value:
+                Binary op="/" @4:9
+                  left:
+                    Var name="a" @4:7
+                  right:
+                    Var name="b" @4:11
+            Assign target="r" @5:5
+              value:
+                Binary op="%" @5:9
+                  left:
+                    Var name="a" @5:7
+                  right:
+                    Var name="b" @5:11

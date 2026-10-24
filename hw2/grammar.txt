@@ -1,0 +1,160 @@
+ГРАММАТИКА ЯЗЫКА FUNNY (HW2, LL(1), рекурсивный спуск)
+
+1. Терминалы (токены лексера, tokens.spec)
+
+  Ключевые слова: function returns requires ensures var while if else
+                  assert assume invariant length int bool true false
+  IDENT  [A-Za-z_][A-Za-z0-9_]*
+  INT    0|[1-9][0-9]*
+  Операторы:  == != <= >= < > = && || ! + - * / %
+  Разделители: ( ) [ ] { } , ; :
+  Пропускаются: пробелы, \t, \r, \n, комментарии // до конца строки.
+  EOF — конец входа (добавляется лексером).
+
+2. Грамматика в EBNF (так написан парсер: одна функция на нетерминал)
+
+  program     ::= function { function } EOF
+  function    ::= "function" IDENT "(" [ params ] ")"
+                  "returns" results
+                  { spec } block
+  results     ::= params | "(" [ params ] ")"
+  params      ::= param { "," param }
+  param       ::= IDENT [ ":" type ]
+  type        ::= ( "int" | "bool" ) { "[" "]" }
+  spec        ::= ( "requires" | "ensures" ) [ expr ]
+  block       ::= "{" { stmt } "}"
+  stmt        ::= block
+                | "var" IDENT ":" type [ "=" expr ] ";"
+                | "if" "(" expr ")" stmt [ "else" stmt ]
+                | "while" "(" expr ")" { "invariant" expr } stmt
+                | "assert" expr ";"
+                | "assume" expr ";"
+                | IDENT { "[" expr "]" } "=" expr ";"
+                | IDENT "(" [ args ] ")" ";"
+  expr        ::= and_expr { "||" and_expr }
+  and_expr    ::= cmp_expr { "&&" cmp_expr }
+  cmp_expr    ::= add_expr [ relop add_expr ]
+  relop       ::= "==" | "!=" | "<" | "<=" | ">" | ">="
+  add_expr    ::= mul_expr { ( "+" | "-" ) mul_expr }
+  mul_expr    ::= unary { ( "*" | "/" | "%" ) unary }
+  unary       ::= ( "-" | "!" ) unary | postfix
+  postfix     ::= primary { "[" expr "]" }
+  primary     ::= INT | "true" | "false"
+                | "length" "(" expr ")"
+                | IDENT [ "(" [ args ] ")" ]
+                | "(" expr ")"
+  args        ::= expr { "," expr }
+
+3. Приоритеты и ассоциативность (от слабого к сильному)
+
+  уровень  операторы            ассоциативность
+  1        ||                   левая
+  2        &&                   левая
+  3        == != < <= > >=      нет (a < b < c — синтаксическая ошибка)
+  4        + -                  левая
+  5        * / %                левая
+  6        унарные - !          правая (префиксные)
+  7        a[i], f(x)           постфиксные
+
+  Левая ассоциативность получена циклом { op операнд } вместо левой рекурсии:
+  исходное правило  add_expr ::= add_expr "+" mul_expr | mul_expr
+  после устранения  add_expr ::= mul_expr add_tail
+                    add_tail ::= "+" mul_expr add_tail | ε
+  Дерево строится слева направо, поэтому 10 - 3 - 2 = (10 - 3) - 2.
+
+4. Приведение к LL(1)
+
+  * Левая рекурсия в выражениях устранена (см. п. 3).
+  * Левая факторизация операторов, начинающихся с IDENT:
+      было   stmt ::= IDENT "=" expr ";" | IDENT "[" ... | IDENT "(" ...
+      стало  stmt ::= IDENT ident_stmt
+             ident_stmt ::= index_list "=" expr ";" | "(" arg_list_opt ")" ";"
+    То же для primary: IDENT call_opt.
+  * Единственный конфликт — «висячий else» в else_part ('else' есть и в FIRST,
+    и в FOLLOW). Разрешён в пользу 'else': else относится к ближайшему if.
+  * Проверка: python3 -m funny ll1 — вычисляет FIRST/FOLLOW по грамматике ниже
+    и печатает конфликты.
+
+5. LL(1)-грамматика в BNF (её читает python3 -m funny ll1)
+
+== BNF ==
+program        -> function function_list EOF
+function_list  -> function function_list | ε
+function       -> 'function' IDENT '(' param_list_opt ')' 'returns' results spec_list block
+results        -> param param_tail | '(' param_list_opt ')'
+param_list_opt -> param param_tail | ε
+param_tail     -> ',' param param_tail | ε
+param          -> IDENT type_opt
+type_opt       -> ':' type | ε
+type           -> base_type array_opt
+base_type      -> 'int' | 'bool'
+array_opt      -> '[' ']' array_opt | ε
+spec_list      -> spec spec_list | ε
+spec           -> 'requires' expr_opt | 'ensures' expr_opt
+expr_opt       -> expr | ε
+block          -> '{' stmt_list '}'
+stmt_list      -> stmt stmt_list | ε
+stmt           -> block
+                | 'var' IDENT ':' type init_opt ';'
+                | 'if' '(' expr ')' stmt else_part
+                | 'while' '(' expr ')' invariant_list stmt
+                | 'assert' expr ';'
+                | 'assume' expr ';'
+                | IDENT ident_stmt
+init_opt       -> '=' expr | ε
+else_part      -> 'else' stmt | ε
+invariant_list -> 'invariant' expr invariant_list | ε
+ident_stmt     -> index_list '=' expr ';' | '(' arg_list_opt ')' ';'
+index_list     -> '[' expr ']' index_list | ε
+expr           -> and_expr or_tail
+or_tail        -> '||' and_expr or_tail | ε
+and_expr       -> cmp_expr and_tail
+and_tail       -> '&&' cmp_expr and_tail | ε
+cmp_expr       -> add_expr cmp_tail
+cmp_tail       -> relop add_expr | ε
+relop          -> '==' | '!=' | '<' | '<=' | '>' | '>='
+add_expr       -> mul_expr add_tail
+add_tail       -> '+' mul_expr add_tail | '-' mul_expr add_tail | ε
+mul_expr       -> unary mul_tail
+mul_tail       -> '*' unary mul_tail | '/' unary mul_tail | '%' unary mul_tail | ε
+unary          -> '-' unary | '!' unary | postfix
+postfix        -> primary index_tail
+index_tail     -> '[' expr ']' index_tail | ε
+primary        -> INT | 'true' | 'false' | 'length' '(' expr ')' | IDENT call_opt | '(' expr ')'
+call_opt       -> '(' arg_list_opt ')' | ε
+arg_list_opt   -> expr arg_tail | ε
+arg_tail       -> ',' expr arg_tail | ε
+== END ==
+
+6. Семантика, заложенная в AST
+
+  * a[i] = e — сахар для функционального копирования массива:
+        a = update(a, i, e)
+    Многомерный случай раскрывается рекурсивно:
+        a[i][j] = e   =>   a = update(a, i, update(a[i], j, e))
+    В AST это узел Assign(target=a, value=Update(...), sugar="array-update").
+  * Пустые requires/ensures допускаются и означают true: в AST их нет.
+  * length(e) — встроенная операция, отдельный узел Length.
+
+7. Соответствие материалам курса и отклонения
+
+  Синтаксис сверен с примерами из P02, P03, P04 (они есть в tests/positive.txt):
+    function f(x, y) returns r { ... }            параметры без типов
+    function f(x:int) returns r:int { ... }       типы через ':'
+    if (a) if (b) r=1; else r=2;                  висячий else
+    a[i] = v                                      сахар для обновления массива
+  Файл docs/funny.ru.md при написании был недоступен; при расхождениях правятся
+  этот файл и funny/parser.py.
+
+  Расширения (в материалах не встречаются, оставлены для удобства и не мешают
+  примерам курса):
+  * Несколько результатов: returns q: int, r: int или returns (q: int, r: int);
+    функция без результата: returns ().
+  * Объявление локальных переменных: var x: int = 0;
+  * Типы: int, bool и массивы любой размерности (int[], int[][], bool[]).
+  * Операторы && || ! % и литералы true/false.
+  * invariant пишется после условия while, до тела, без ';'.
+  * Пустые requires/ensures допустимы и означают true.
+
+  Не поддерживается: импликация ==>, return, глобальные переменные,
+  символы вне ASCII (алфавит ASCII, как в HW1).
