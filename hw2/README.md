@@ -98,7 +98,7 @@ examples/
 | Конструкция | Синтаксис |
 |---|---|
 | функция | `function f(x, y) returns r { ... }`, `function f(x: int) returns r: int requires e ensures e { ... }` |
-| переменная | `var x: int;`, `var y: int = 5;` |
+| переменная | `var x: int;`, `var y: int = 5;`, `var z = 5;`, `var w;` (тип выводит HW3) |
 | присваивание | `x = e;` |
 | обновление массива | `a[i] = e;`, `m[i][j] = e;` |
 | условие | `if (e) stmt` `[else stmt]` |
@@ -161,7 +161,7 @@ ast.functions[0].body.stmts           # поля узла доступны ка�
 | `Function` | `name`, `params: [Param]`, `returns: [Param]`, `requires: [expr]`, `ensures: [expr]`, `body: Block` |
 | `Param` | `name`, `type` (`"int"`, `"bool"`, `"int[]"`, `"int[][]"`, ... или `null`, если тип не указан) |
 | `Block` | `stmts: [stmt]` |
-| `VarDecl` | `name`, `type`, `init: expr \| null` |
+| `VarDecl` | `name`, `type` (или `null`, если не указан), `init: expr \| null` |
 | `Assign` | `target` (имя), `value: expr`, `sugar: "array-update"` — если это было `a[i] = e` |
 | `If` | `cond`, `then: stmt`, `orelse: stmt \| null` |
 | `While` | `cond`, `invariants: [expr]`, `body: stmt` |
@@ -230,7 +230,7 @@ function f(x: int) returns (y: int)
 Расширения (в примерах курса не встречаются, но им не мешают):
 
 * несколько результатов: `returns q: int, r: int` или `returns (q: int, r: int)`; без результата — `returns ()`;
-* объявление переменных `var x: int = 0;`;
+* объявление переменных `var x: int = 0;`, тип можно опустить: `var x = 0;`, `var x;` (выводится в HW3);
 * типы `int`, `bool` и массивы любой размерности;
 * операторы `&&`, `||`, `!`, `%`, литералы `true`/`false`;
 * `invariant` после условия `while`, до тела, без `;`;

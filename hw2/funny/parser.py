@@ -214,8 +214,10 @@ class Parser:
     def var_decl(self) -> Node:
         kw = self.advance()
         name = self.expect("IDENT", "имя переменной")
-        self.expect("COLON")
-        typ = self.type_()
+        typ = None
+        if self.at("COLON"):
+            self.advance()
+            typ = self.type_()
         init = None
         if self.at("ASSIGN"):
             self.advance()
@@ -267,8 +269,8 @@ class Parser:
         value = self.expr()
         self.expect("SEMI")
         if not indices:
-            return Node("Assign", eq, target=name.lexeme, value=value)
-        return Node("Assign", eq, target=name.lexeme,
+            return Node("Assign", name, target=name.lexeme, value=value)
+        return Node("Assign", name, target=name.lexeme,
                     value=self.desugar_update(Node("Var", name, name=name.lexeme), indices, value, eq),
                     sugar="array-update")
 

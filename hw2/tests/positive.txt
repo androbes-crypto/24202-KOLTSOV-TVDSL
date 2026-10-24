@@ -65,7 +65,7 @@ Program @1:1
             VarDecl name="i" type="int" @5:3
               init:
                 Int value=0 @5:16
-            Assign target="s" @6:5
+            Assign target="s" @6:3
               value:
                 Int value=0 @6:7
             While @7:3
@@ -92,7 +92,7 @@ Program @1:1
               body:
                 Block @9:3
                   stmts:
-                    Assign target="s" @10:7
+                    Assign target="s" @10:5
                       value:
                         Binary op="+" @10:11
                           left:
@@ -103,7 +103,7 @@ Program @1:1
                                 Var name="a" @10:13
                               index:
                                 Var name="i" @10:15
-                    Assign target="i" @11:7
+                    Assign target="i" @11:5
                       value:
                         Binary op="+" @11:11
                           left:
@@ -169,7 +169,7 @@ Program @1:1
               then:
                 Block @4:14
                   stmts:
-                    Assign target="s" @5:7
+                    Assign target="s" @5:5
                       value:
                         Int value=1 @5:9
               orelse:
@@ -183,13 +183,13 @@ Program @1:1
                   then:
                     Block @6:22
                       stmts:
-                        Assign target="s" @7:7
+                        Assign target="s" @7:5
                           value:
                             Int value=0 @7:9
                   orelse:
                     Block @8:10
                       stmts:
-                        Assign target="s" @9:7
+                        Assign target="s" @9:5
                           value:
                             Unary op="-" @9:9
                               operand:
@@ -215,7 +215,7 @@ Program @1:1
       body:
         Block @2:1
           stmts:
-            Assign target="x" @3:5
+            Assign target="x" @3:3
               value:
                 Int value=0 @3:7
             If @4:3
@@ -226,11 +226,11 @@ Program @1:1
                   cond:
                     Var name="b" @4:14
                   then:
-                    Assign target="x" @4:19
+                    Assign target="x" @4:17
                       value:
                         Int value=1 @4:21
                   orelse:
-                    Assign target="x" @4:31
+                    Assign target="x" @4:29
                       value:
                         Int value=2 @4:33
 
@@ -275,10 +275,10 @@ Program @1:1
       body:
         Block @3:1
           stmts:
-            Assign target="b" @4:5
+            Assign target="b" @4:3
               value:
                 Var name="a" @4:7
-            Assign target="b" sugar="array-update" @5:8
+            Assign target="b" sugar="array-update" @5:3
               value:
                 Update @5:8
                   array:
@@ -295,10 +295,10 @@ Program @1:1
                             Var name="i" @5:12
                       right:
                         Int value=1 @5:17
-            Assign target="n" @6:5
+            Assign target="n" @6:3
               value:
                 Var name="m" @6:7
-            Assign target="n" sugar="array-update" @7:11
+            Assign target="n" sugar="array-update" @7:3
               value:
                 Update @7:11
                   array:
@@ -348,7 +348,7 @@ Program @1:1
                 Bool value=true @5:18
             VarDecl name="a" type="int[]" @6:3
             VarDecl name="flags" type="bool[]" @7:3
-            Assign target="x" @8:5
+            Assign target="x" @8:3
               value:
                 Var name="y" @8:7
 
@@ -378,7 +378,7 @@ Program @1:1
       body:
         Block @2:1
           stmts:
-            Assign target="x" @3:5
+            Assign target="x" @3:3
               value:
                 Binary op="-" @3:17
                   left:
@@ -401,7 +401,7 @@ Program @1:1
                             Int value=2 @3:23
                       right:
                         Int value=3 @3:27
-            Assign target="y" @4:5
+            Assign target="y" @4:3
               value:
                 Binary op="-" @4:14
                   left:
@@ -412,7 +412,7 @@ Program @1:1
                         Int value=3 @4:12
                   right:
                     Int value=2 @4:16
-            Assign target="x" @5:5
+            Assign target="x" @5:3
               value:
                 Binary op="*" @5:13
                   left:
@@ -429,7 +429,7 @@ Program @1:1
                         Var name="b" @5:16
                       right:
                         Var name="c" @5:20
-            Assign target="z" @6:5
+            Assign target="z" @6:3
               value:
                 Binary op="||" @6:26
                   left:
@@ -450,7 +450,7 @@ Program @1:1
                             Int value=0 @6:24
                   right:
                     Bool value=false @6:29
-            Assign target="z" @7:5
+            Assign target="z" @7:3
               value:
                 Unary op="!" @7:7
                   operand:
@@ -492,11 +492,11 @@ Program @1:1
                   right:
                     Var name="b" @3:11
               then:
-                Assign target="m" @3:16
+                Assign target="m" @3:14
                   value:
                     Var name="a" @3:18
               orelse:
-                Assign target="m" @3:28
+                Assign target="m" @3:26
                   value:
                     Var name="b" @3:30
     Function name="main" @6:1
@@ -509,7 +509,7 @@ Program @1:1
       body:
         Block @7:1
           stmts:
-            Assign target="r" @8:5
+            Assign target="r" @8:3
               value:
                 Call name="max" @8:7
                   args:
@@ -556,7 +556,7 @@ Program @1:1
       body:
         Block @5:1
           stmts:
-            Assign target="y" @6:5
+            Assign target="y" @6:3
               value:
                 Var name="x" @6:7
 
@@ -582,7 +582,7 @@ Program @1:1
       body:
         Block @2:1
           stmts:
-            Assign target="r" @3:5
+            Assign target="r" @3:3
               value:
                 Int value=1 @3:7
     Function name="two" @6:1
@@ -594,7 +594,7 @@ Program @1:1
       body:
         Block @7:1
           stmts:
-            Assign target="r" @8:4
+            Assign target="r" @8:2
               value:
                 Binary op="+" @8:12
                   left:
@@ -659,7 +659,7 @@ Program @1:1
                     Int value=0 @10:14
               invariants: []
               body:
-                Assign target="n" @10:19
+                Assign target="n" @10:17
                   value:
                     Binary op="-" @10:23
                       left:
@@ -691,7 +691,7 @@ Program @1:1
       body:
         Block @1:28
           stmts:
-            Assign target="r" @1:32
+            Assign target="r" @1:30
               value:
                 Binary op="+" @1:36
                   left:
@@ -737,7 +737,7 @@ Program @1:1
       body:
         Block @1:29
           stmts:
-            Assign target="r" @1:33
+            Assign target="r" @1:31
               value:
                 Binary op="+" @1:37
                   left:
@@ -760,7 +760,7 @@ Program @1:1
       body:
         Block @1:33
           stmts:
-            Assign target="r" @1:37
+            Assign target="r" @1:35
               value:
                 Binary op="+" @1:41
                   left:
@@ -783,7 +783,7 @@ Program @1:1
       body:
         Block @1:25
           stmts:
-            Assign target="r" @1:29
+            Assign target="r" @1:27
               value:
                 Binary op="+" @1:33
                   left:
@@ -819,11 +819,11 @@ Program @1:1
                   cond:
                     Var name="b" @1:41
                   then:
-                    Assign target="r" @1:45
+                    Assign target="r" @1:44
                       value:
                         Int value=1 @1:46
                   orelse:
-                    Assign target="r" @1:55
+                    Assign target="r" @1:54
                       value:
                         Int value=2 @1:56
 
@@ -854,17 +854,53 @@ Program @1:1
       body:
         Block @3:1
           stmts:
-            Assign target="q" @4:5
+            Assign target="q" @4:3
               value:
                 Binary op="/" @4:9
                   left:
                     Var name="a" @4:7
                   right:
                     Var name="b" @4:11
-            Assign target="r" @5:5
+            Assign target="r" @5:3
               value:
                 Binary op="%" @5:9
                   left:
                     Var name="a" @5:7
                   right:
                     Var name="b" @5:11
+
+=== var без аннотации типа
+function f(x: int) returns (r: int)
+{
+  var a = x + 1;
+  var b;
+  b = true;
+  r = a;
+}
+--- ожидается
+Program @1:1
+  functions:
+    Function name="f" @1:1
+      params:
+        Param name="x" type="int" @1:12
+      returns:
+        Param name="r" type="int" @1:29
+      requires: []
+      ensures: []
+      body:
+        Block @2:1
+          stmts:
+            VarDecl name="a" @3:3
+              init:
+                Binary op="+" @3:13
+                  left:
+                    Var name="x" @3:11
+                  right:
+                    Int value=1 @3:15
+            VarDecl name="b" @4:3
+            Assign target="b" @5:3
+              value:
+                Bool value=true @5:7
+            Assign target="r" @6:3
+              value:
+                Var name="a" @6:7

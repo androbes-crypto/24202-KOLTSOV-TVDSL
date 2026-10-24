@@ -24,7 +24,7 @@
   spec        ::= ( "requires" | "ensures" ) [ expr ]
   block       ::= "{" { stmt } "}"
   stmt        ::= block
-                | "var" IDENT ":" type [ "=" expr ] ";"
+                | "var" IDENT [ ":" type ] [ "=" expr ] ";"
                 | "if" "(" expr ")" stmt [ "else" stmt ]
                 | "while" "(" expr ")" { "invariant" expr } stmt
                 | "assert" expr ";"
@@ -95,7 +95,7 @@ expr_opt       -> expr | ε
 block          -> '{' stmt_list '}'
 stmt_list      -> stmt stmt_list | ε
 stmt           -> block
-                | 'var' IDENT ':' type init_opt ';'
+                | 'var' IDENT type_opt init_opt ';'
                 | 'if' '(' expr ')' stmt else_part
                 | 'while' '(' expr ')' invariant_list stmt
                 | 'assert' expr ';'
@@ -150,7 +150,8 @@ arg_tail       -> ',' expr arg_tail | ε
   примерам курса):
   * Несколько результатов: returns q: int, r: int или returns (q: int, r: int);
     функция без результата: returns ().
-  * Объявление локальных переменных: var x: int = 0;
+  * Объявление локальных переменных: var x: int = 0; тип можно не указывать
+    (var x; var y = 5;) — его выводит семантический анализ (HW3).
   * Типы: int, bool и массивы любой размерности (int[], int[][], bool[]).
   * Операторы && || ! % и литералы true/false.
   * invariant пишется после условия while, до тела, без ';'.
