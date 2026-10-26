@@ -125,26 +125,3 @@ call_opt       -> '(' arg_list_opt ')' | ε
 arg_list_opt   -> expr arg_tail | ε
 arg_tail       -> ',' expr arg_tail | ε
 == END ==
-
-6. Семантика, заложенная в AST
-
-  * a[i] = e — сахар для функционального копирования массива:
-        a = update(a, i, e)
-    Многомерный случай раскрывается рекурсивно:
-        a[i][j] = e   =>   a = update(a, i, update(a[i], j, e))
-    В AST это узел Assign(target=a, value=Update(...), sugar="array-update").
-  * Пустые requires/ensures допускаются и означают true: в AST их нет.
-  * length(e) — встроенная операция, отдельный узел Length.
-
-7. Соответствие материалам курса и отклонения
-
-  Синтаксис сверен с примерами из P02, P03, P04 (они есть в tests/positive.txt):
-    function f(x, y) returns r { ... }            параметры без типов
-    function f(x:int) returns r:int { ... }       типы через ':'
-    if (a) if (b) r=1; else r=2;                  висячий else
-    a[i] = v                                      сахар для обновления массива
-  Файл docs/funny.ru.md при написании был недоступен; при расхождениях правятся
-  этот файл и funny/parser.py.
-
-  Не поддерживается: импликация ==>, return, глобальные переменные,
-  символы вне ASCII (алфавит ASCII, как в HW1).
