@@ -1,0 +1,4 @@
+graph "calc.after" {
+  node [shape=circle, style=filled];
+  t2 [label="t2\nr0", fillcolor="#8dd3c7"];
+}

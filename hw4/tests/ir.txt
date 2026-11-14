@@ -1,0 +1,286 @@
+=== лекция 6, слайд 8: if/else и чтение массива
+function f(x: int, a: int[]) returns (r: int)
+{
+  if (x > 0) {
+    r = a[x] + 1;
+  } else {
+    r = 0;
+  }
+}
+--- ожидается
+function f(x: int, a: int[]) returns (r: int)
+    t1 := x > 0
+    if t1 goto L1_then
+    goto L1_else
+L1_then:
+    t2 := load a[x]
+    r := t2 + 1
+    goto L1_end
+L1_else:
+    r := 0
+L1_end:
+    return r
+
+=== лекция 6, слайд 30: свёртка констант
+function f() returns (r: bool)
+{
+  var t1 = 3;
+  var t2 = t1 + 4;
+  var t3 = t2 < 10;
+  r = t3;
+}
+--- ожидается
+function f() returns (r: bool)
+    return true
+
+=== лекция 6, слайд 31: алгебраические упрощения
+function f(x: int, e: int) returns (r: int)
+{
+  var a = x + 0;
+  var b = a - 0;
+  var c = b * 1;
+  var d = 0 * e;
+  r = c + d;
+}
+--- ожидается
+function f(x: int, e: int) returns (r: int)
+    return x
+
+=== лекция 6, слайд 33: локальный CSE
+function f(a: int, b: int) returns (r: int)
+{
+  var t1 = a + b;
+  var t2 = a + b;
+  r = t1 + t2;
+}
+--- ожидается
+function f(a: int, b: int) returns (r: int)
+    t1 := a + b
+    r := t1 + t1
+    return r
+
+=== P07: константы и DCE (имена t1, t2 заняты пользователем)
+function f(cond: bool) returns (r: int)
+{
+  var t1 = 1;
+  var t2 = t1 + 0;
+  if (!cond) {
+    var t3 = t2;
+  }
+  r = t2;
+}
+--- ожидается
+function f(cond: bool) returns (r: int)
+    return 1
+
+=== КР1 var3 4a: цикл с мёртвым присваиванием
+function count(a: int[], n: int, x: int) returns (c: int)
+{
+  var i = 0;
+  var t = 0;
+  c = 0;
+  while (i < n) {
+    if (a[i] == x) {
+      c = c + 1;
+    }
+    t = i * 2;
+    i = i + 1;
+  }
+}
+--- ожидается
+function count(a: int[], n: int, x: int) returns (c: int)
+    i := 0
+    c := 0
+L1_while:
+    t1 := i < n
+    if t1 goto L1_body
+    goto L1_end
+L1_body:
+    t3 := load a[i]
+    t2 := t3 == x
+    if t2 goto L2_then
+    goto L2_end
+L2_then:
+    c := c + 1
+L2_end:
+    i := i + 1
+    goto L1_while
+L1_end:
+    return c
+
+=== деление: x/0 не сворачивается, x/x не упрощается, мёртвое деление остаётся
+function f(x: int) returns (r: int)
+{
+  var z = 0;
+  var a = x / z;
+  var b = x / x;
+  var c = x / 2;
+  r = b;
+}
+--- ожидается
+function f(x: int) returns (r: int)
+    a := x / 0
+    b := x / x
+    return b
+
+=== мёртвые load и call не удаляются (могут упасть)
+function g(x: int) returns (y: int)
+{
+  y = 10 / x;
+}
+
+function f(a: int[], x: int) returns (r: int)
+{
+  var v = a[x];
+  var w = g(x);
+  r = 1;
+}
+--- ожидается
+function g(x: int) returns (y: int)
+    y := 10 / x
+    return y
+
+function f(a: int[], x: int) returns (r: int)
+    v := load a[x]
+    w := call g(x)
+    return 1
+
+=== && и || как значение и как условие
+function f(a: int[], i: int) returns (r: bool)
+{
+  var ok = i < length(a) && a[i] > 0;
+  if (ok || i == 0) {
+    r = true;
+  } else {
+    r = !ok;
+  }
+}
+--- ожидается
+function f(a: int[], i: int) returns (r: bool)
+    t2 := length(a)
+    t1 := i < t2
+    if t1 goto L1_rhs
+    goto L1_end
+L1_rhs:
+    t3 := load a[i]
+    t1 := t3 > 0
+L1_end:
+    ok := t1
+    if t1 goto L2_then
+    t4 := i == 0
+    if t4 goto L2_then
+    goto L2_else
+L2_then:
+    r := true
+    goto L2_end
+L2_else:
+    r := !ok
+L2_end:
+    return r
+
+=== обновление двумерного массива
+function f(m: int[][], i: int, j: int, v: int) returns (res: int[][])
+{
+  res = m;
+  res[i][j] = v;
+}
+--- ожидается
+function f(m: int[][], i: int, j: int, v: int) returns (res: int[][])
+    t2 := load m[i]
+    t1 := update(t2, j, v)
+    res := update(m, i, t1)
+    return res
+
+=== несколько результатов и вызов-оператор
+function divmod(a: int, b: int) returns (q: int, r: int)
+{
+  q = a / b;
+  r = a - q * b;
+}
+
+function main(a: int) returns (r: int)
+{
+  divmod(a, 3);
+  r = a;
+}
+--- ожидается
+function divmod(a: int, b: int) returns (q: int, r: int)
+    q := a / b
+    t1 := q * b
+    r := a - t1
+    return q, r
+
+function main(a: int) returns (r: int)
+    call divmod(a, 3)
+    return a
+
+=== одно имя в соседних блоках
+function f(c: bool) returns (r: int)
+{
+  if (c) {
+    var x = 1;
+    r = x;
+  } else {
+    var x = 2;
+    r = x + 1;
+  }
+}
+--- ожидается
+function f(c: bool) returns (r: int)
+    if c goto L1_then
+    goto L1_else
+L1_then:
+    r := 1
+    goto L1_end
+L1_else:
+    r := 3
+L1_end:
+    return r
+
+=== константные условия: недостижимые ветки и цикл
+function f(n: int) returns (r: int)
+{
+  r = 0;
+  while (false) {
+    r = r + n;
+  }
+  if (1 < 2) {
+    r = r + 1;
+  } else {
+    r = r + 2;
+  }
+}
+--- ожидается
+function f(n: int) returns (r: int)
+    return 1
+
+=== assert остаётся, assume пропускается
+function f(x: int) returns (r: int)
+{
+  assume x > 0;
+  assert x != 0;
+  r = 100 / x;
+}
+--- ожидается
+function f(x: int) returns (r: int)
+    t1 := x != 0
+    assert t1
+    r := 100 / x
+    return r
+
+=== много временных: граф конфликтов
+function f(a: int, b: int, c: int, d: int) returns (r: int)
+{
+  r = (a + b) * (c - d * 2) + (a - b) * (c + d);
+}
+--- ожидается
+function f(a: int, b: int, c: int, d: int) returns (r: int)
+    t2 := a + b
+    t4 := d * 2
+    t3 := c - t4
+    t1 := t2 * t3
+    t6 := a - b
+    t7 := c + d
+    t5 := t6 * t7
+    r := t1 + t5
+    return r

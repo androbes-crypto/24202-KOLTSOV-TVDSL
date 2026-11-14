@@ -1,0 +1,6 @@
+digraph "calc.after" {
+  node [shape=box, fontname="monospace"];
+  exit [shape=oval];
+  B1 [label="B1\lt2 := a + b\lu := t2 * t2\lr := u + 7\lreturn r\l"];
+  B1 -> exit;
+}

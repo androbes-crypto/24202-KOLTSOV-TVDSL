@@ -1,0 +1,192 @@
+== IR до оптимизаций ==
+function calc(a: int, b: int) returns (r: int)
+    k := 3
+    m := k + 4
+    big := m < 10
+    t1 := a * 1
+    x := t1 + 0
+    t2 := a + b
+    t3 := a + b
+    u := t2 * t3
+    dead := x * m
+    if big goto L1_then
+    goto L1_else
+L1_then:
+    r := u + m
+    goto L1_end
+L1_else:
+    r := a / b
+L1_end:
+    return r
+
+function count(a: int[], v: int) returns (c: int)
+    i := 0
+    c := 0
+L1_while:
+    t2 := length(a)
+    t1 := i < t2
+    if t1 goto L2_and
+    goto L1_end
+L2_and:
+    t4 := load a[i]
+    t3 := t4 != v
+    if t3 goto L1_body
+    goto L1_end
+L1_body:
+    t := i * 2
+    c := c + 1
+    i := i + 1
+    goto L1_while
+L1_end:
+    return c
+
+== IR после оптимизаций (all) ==
+function calc(a: int, b: int) returns (r: int)
+    t2 := a + b
+    u := t2 * t2
+    r := u + 7
+    return r
+
+function count(a: int[], v: int) returns (c: int)
+    i := 0
+    c := 0
+L1_while:
+    t2 := length(a)
+    t1 := i < t2
+    if t1 goto L2_and
+    goto L1_end
+L2_and:
+    t4 := load a[i]
+    t3 := t4 != v
+    if t3 goto L1_body
+    goto L1_end
+L1_body:
+    c := c + 1
+    i := i + 1
+    goto L1_while
+L1_end:
+    return c
+
+== CFG до оптимизаций ==
+calc:
+B1 [вход]  pred: —  succ: B2 (true), B3 (false)
+    k := 3
+    m := k + 4
+    big := m < 10
+    t1 := a * 1
+    x := t1 + 0
+    t2 := a + b
+    t3 := a + b
+    u := t2 * t3
+    dead := x * m
+    if big goto L1_then
+    goto L1_else
+B2  pred: B1  succ: B4
+  L1_then:
+    r := u + m
+    goto L1_end
+B3  pred: B1  succ: B4
+  L1_else:
+    r := a / b
+B4  pred: B2, B3  succ: exit
+  L1_end:
+    return r
+
+count:
+B1 [вход]  pred: —  succ: B2
+    i := 0
+    c := 0
+B2  pred: B1, B4  succ: B3 (true), B5 (false)
+  L1_while:
+    t2 := length(a)
+    t1 := i < t2
+    if t1 goto L2_and
+    goto L1_end
+B3  pred: B2  succ: B4 (true), B5 (false)
+  L2_and:
+    t4 := load a[i]
+    t3 := t4 != v
+    if t3 goto L1_body
+    goto L1_end
+B4  pred: B3  succ: B2
+  L1_body:
+    t := i * 2
+    c := c + 1
+    i := i + 1
+    goto L1_while
+B5  pred: B2, B3  succ: exit
+  L1_end:
+    return c
+обратные рёбра: B4 -> B2
+
+== граф конфликтов до оптимизаций ==
+calc:
+вершин: 3, рёбер: 1
+  t1    r0      соседи: —
+  t2    r0      соседи: t3
+  t3    r1      соседи: t2
+цветов: 2
+
+count:
+вершин: 4, рёбер: 0
+  t1    r0      соседи: —
+  t2    r0      соседи: —
+  t3    r0      соседи: —
+  t4    r0      соседи: —
+цветов: 1
+
+== CFG после оптимизаций ==
+calc:
+B1 [вход]  pred: —  succ: exit
+    t2 := a + b
+    u := t2 * t2
+    r := u + 7
+    return r
+
+count:
+B1 [вход]  pred: —  succ: B2
+    i := 0
+    c := 0
+B2  pred: B1, B4  succ: B3 (true), B5 (false)
+  L1_while:
+    t2 := length(a)
+    t1 := i < t2
+    if t1 goto L2_and
+    goto L1_end
+B3  pred: B2  succ: B4 (true), B5 (false)
+  L2_and:
+    t4 := load a[i]
+    t3 := t4 != v
+    if t3 goto L1_body
+    goto L1_end
+B4  pred: B3  succ: B2
+  L1_body:
+    c := c + 1
+    i := i + 1
+    goto L1_while
+B5  pred: B2, B3  succ: exit
+  L1_end:
+    return c
+обратные рёбра: B4 -> B2
+
+== граф конфликтов после оптимизаций ==
+calc:
+вершин: 1, рёбер: 0
+  t2    r0      соседи: —
+цветов: 1
+
+count:
+вершин: 4, рёбер: 0
+  t1    r0      соседи: —
+  t2    r0      соседи: —
+  t3    r0      соседи: —
+  t4    r0      соседи: —
+цветов: 1
+
+== метрики (до -> после) ==
+calc: инструкций 15 -> 4, временных 3 -> 1, блоков 4 -> 1, цветов 2 -> 1
+  замен: const 10, alg 2, cse 1, unreach 6, dce 7
+
+count: инструкций 15 -> 14, временных 4 -> 4, блоков 5 -> 5, цветов 1 -> 1
+  замен: const 0, alg 0, cse 0, unreach 0, dce 1
+

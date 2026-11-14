@@ -1,0 +1,1360 @@
+{
+  "functions": [
+    {
+      "name": "calc",
+      "before": {
+        "ir": {
+          "name": "calc",
+          "params": [
+            {
+              "name": "a",
+              "type": "int"
+            },
+            {
+              "name": "b",
+              "type": "int"
+            }
+          ],
+          "results": [
+            {
+              "name": "r",
+              "type": "int"
+            }
+          ],
+          "vars": {
+            "a": {
+              "type": "int",
+              "temp": false
+            },
+            "b": {
+              "type": "int",
+              "temp": false
+            },
+            "r": {
+              "type": "int",
+              "temp": false
+            },
+            "k": {
+              "type": "int",
+              "temp": false
+            },
+            "m": {
+              "type": "int",
+              "temp": false
+            },
+            "big": {
+              "type": "bool",
+              "temp": false
+            },
+            "x": {
+              "type": "int",
+              "temp": false
+            },
+            "u": {
+              "type": "int",
+              "temp": false
+            },
+            "dead": {
+              "type": "int",
+              "temp": false
+            },
+            "t1": {
+              "type": "int",
+              "temp": true
+            },
+            "t2": {
+              "type": "int",
+              "temp": true
+            },
+            "t3": {
+              "type": "int",
+              "temp": true
+            }
+          },
+          "body": [
+            {
+              "op": "copy",
+              "dst": "k",
+              "args": [
+                {
+                  "int": 3
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "m",
+              "sym": "+",
+              "args": [
+                {
+                  "var": "k"
+                },
+                {
+                  "int": 4
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "big",
+              "sym": "<",
+              "args": [
+                {
+                  "var": "m"
+                },
+                {
+                  "int": 10
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "t1",
+              "sym": "*",
+              "args": [
+                {
+                  "var": "a"
+                },
+                {
+                  "int": 1
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "x",
+              "sym": "+",
+              "args": [
+                {
+                  "var": "t1"
+                },
+                {
+                  "int": 0
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "t2",
+              "sym": "+",
+              "args": [
+                {
+                  "var": "a"
+                },
+                {
+                  "var": "b"
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "t3",
+              "sym": "+",
+              "args": [
+                {
+                  "var": "a"
+                },
+                {
+                  "var": "b"
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "u",
+              "sym": "*",
+              "args": [
+                {
+                  "var": "t2"
+                },
+                {
+                  "var": "t3"
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "dead",
+              "sym": "*",
+              "args": [
+                {
+                  "var": "x"
+                },
+                {
+                  "var": "m"
+                }
+              ]
+            },
+            {
+              "op": "if",
+              "args": [
+                {
+                  "var": "big"
+                }
+              ],
+              "target": "L1_then"
+            },
+            {
+              "op": "goto",
+              "target": "L1_else"
+            },
+            {
+              "op": "label",
+              "target": "L1_then"
+            },
+            {
+              "op": "binop",
+              "dst": "r",
+              "sym": "+",
+              "args": [
+                {
+                  "var": "u"
+                },
+                {
+                  "var": "m"
+                }
+              ]
+            },
+            {
+              "op": "goto",
+              "target": "L1_end"
+            },
+            {
+              "op": "label",
+              "target": "L1_else"
+            },
+            {
+              "op": "binop",
+              "dst": "r",
+              "sym": "/",
+              "args": [
+                {
+                  "var": "a"
+                },
+                {
+                  "var": "b"
+                }
+              ]
+            },
+            {
+              "op": "label",
+              "target": "L1_end"
+            },
+            {
+              "op": "return",
+              "args": [
+                {
+                  "var": "r"
+                }
+              ]
+            }
+          ]
+        },
+        "cfg": {
+          "blocks": [
+            {
+              "name": "B1",
+              "instrs": [
+                "k := 3",
+                "m := k + 4",
+                "big := m < 10",
+                "t1 := a * 1",
+                "x := t1 + 0",
+                "t2 := a + b",
+                "t3 := a + b",
+                "u := t2 * t3",
+                "dead := x * m",
+                "if big goto L1_then",
+                "goto L1_else"
+              ],
+              "succ": [
+                {
+                  "to": "B2",
+                  "kind": "true"
+                },
+                {
+                  "to": "B3",
+                  "kind": "false"
+                }
+              ],
+              "pred": [],
+              "live_in": [
+                "a",
+                "b"
+              ],
+              "live_out": [
+                "a",
+                "b",
+                "m",
+                "u"
+              ]
+            },
+            {
+              "name": "B2",
+              "instrs": [
+                "L1_then:",
+                "r := u + m",
+                "goto L1_end"
+              ],
+              "succ": [
+                {
+                  "to": "B4",
+                  "kind": ""
+                }
+              ],
+              "pred": [
+                "B1"
+              ],
+              "live_in": [
+                "m",
+                "u"
+              ],
+              "live_out": [
+                "r"
+              ]
+            },
+            {
+              "name": "B3",
+              "instrs": [
+                "L1_else:",
+                "r := a / b"
+              ],
+              "succ": [
+                {
+                  "to": "B4",
+                  "kind": ""
+                }
+              ],
+              "pred": [
+                "B1"
+              ],
+              "live_in": [
+                "a",
+                "b"
+              ],
+              "live_out": [
+                "r"
+              ]
+            },
+            {
+              "name": "B4",
+              "instrs": [
+                "L1_end:",
+                "return r"
+              ],
+              "succ": [
+                {
+                  "to": "exit",
+                  "kind": ""
+                }
+              ],
+              "pred": [
+                "B2",
+                "B3"
+              ],
+              "live_in": [
+                "r"
+              ],
+              "live_out": []
+            }
+          ],
+          "back_edges": []
+        },
+        "interference": {
+          "nodes": [
+            "t1",
+            "t2",
+            "t3"
+          ],
+          "edges": [
+            [
+              "t2",
+              "t3"
+            ]
+          ],
+          "coloring": {
+            "t2": 0,
+            "t3": 1,
+            "t1": 0
+          },
+          "colors": 2,
+          "spilled": []
+        },
+        "metrics": {
+          "instructions": 15,
+          "temporaries": 3,
+          "blocks": 4,
+          "colors": 2,
+          "spilled": 0
+        }
+      },
+      "after": {
+        "ir": {
+          "name": "calc",
+          "params": [
+            {
+              "name": "a",
+              "type": "int"
+            },
+            {
+              "name": "b",
+              "type": "int"
+            }
+          ],
+          "results": [
+            {
+              "name": "r",
+              "type": "int"
+            }
+          ],
+          "vars": {
+            "a": {
+              "type": "int",
+              "temp": false
+            },
+            "b": {
+              "type": "int",
+              "temp": false
+            },
+            "r": {
+              "type": "int",
+              "temp": false
+            },
+            "k": {
+              "type": "int",
+              "temp": false
+            },
+            "m": {
+              "type": "int",
+              "temp": false
+            },
+            "big": {
+              "type": "bool",
+              "temp": false
+            },
+            "x": {
+              "type": "int",
+              "temp": false
+            },
+            "u": {
+              "type": "int",
+              "temp": false
+            },
+            "dead": {
+              "type": "int",
+              "temp": false
+            },
+            "t1": {
+              "type": "int",
+              "temp": true
+            },
+            "t2": {
+              "type": "int",
+              "temp": true
+            },
+            "t3": {
+              "type": "int",
+              "temp": true
+            }
+          },
+          "body": [
+            {
+              "op": "binop",
+              "dst": "t2",
+              "sym": "+",
+              "args": [
+                {
+                  "var": "a"
+                },
+                {
+                  "var": "b"
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "u",
+              "sym": "*",
+              "args": [
+                {
+                  "var": "t2"
+                },
+                {
+                  "var": "t2"
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "r",
+              "sym": "+",
+              "args": [
+                {
+                  "var": "u"
+                },
+                {
+                  "int": 7
+                }
+              ]
+            },
+            {
+              "op": "return",
+              "args": [
+                {
+                  "var": "r"
+                }
+              ]
+            }
+          ]
+        },
+        "cfg": {
+          "blocks": [
+            {
+              "name": "B1",
+              "instrs": [
+                "t2 := a + b",
+                "u := t2 * t2",
+                "r := u + 7",
+                "return r"
+              ],
+              "succ": [
+                {
+                  "to": "exit",
+                  "kind": ""
+                }
+              ],
+              "pred": [],
+              "live_in": [
+                "a",
+                "b"
+              ],
+              "live_out": []
+            }
+          ],
+          "back_edges": []
+        },
+        "interference": {
+          "nodes": [
+            "t2"
+          ],
+          "edges": [],
+          "coloring": {
+            "t2": 0
+          },
+          "colors": 1,
+          "spilled": []
+        },
+        "metrics": {
+          "instructions": 4,
+          "temporaries": 1,
+          "blocks": 1,
+          "colors": 1,
+          "spilled": 0
+        }
+      },
+      "rewrites": {
+        "const": 10,
+        "alg": 2,
+        "cse": 1,
+        "unreach": 6,
+        "dce": 7
+      }
+    },
+    {
+      "name": "count",
+      "before": {
+        "ir": {
+          "name": "count",
+          "params": [
+            {
+              "name": "a",
+              "type": "int[]"
+            },
+            {
+              "name": "v",
+              "type": "int"
+            }
+          ],
+          "results": [
+            {
+              "name": "c",
+              "type": "int"
+            }
+          ],
+          "vars": {
+            "a": {
+              "type": "int[]",
+              "temp": false
+            },
+            "v": {
+              "type": "int",
+              "temp": false
+            },
+            "c": {
+              "type": "int",
+              "temp": false
+            },
+            "i": {
+              "type": "int",
+              "temp": false
+            },
+            "t": {
+              "type": "int",
+              "temp": false
+            },
+            "t1": {
+              "type": "bool",
+              "temp": true
+            },
+            "t2": {
+              "type": "int",
+              "temp": true
+            },
+            "t3": {
+              "type": "bool",
+              "temp": true
+            },
+            "t4": {
+              "type": "int",
+              "temp": true
+            }
+          },
+          "body": [
+            {
+              "op": "copy",
+              "dst": "i",
+              "args": [
+                {
+                  "int": 0
+                }
+              ]
+            },
+            {
+              "op": "copy",
+              "dst": "c",
+              "args": [
+                {
+                  "int": 0
+                }
+              ]
+            },
+            {
+              "op": "label",
+              "target": "L1_while"
+            },
+            {
+              "op": "length",
+              "dst": "t2",
+              "args": [
+                {
+                  "var": "a"
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "t1",
+              "sym": "<",
+              "args": [
+                {
+                  "var": "i"
+                },
+                {
+                  "var": "t2"
+                }
+              ]
+            },
+            {
+              "op": "if",
+              "args": [
+                {
+                  "var": "t1"
+                }
+              ],
+              "target": "L2_and"
+            },
+            {
+              "op": "goto",
+              "target": "L1_end"
+            },
+            {
+              "op": "label",
+              "target": "L2_and"
+            },
+            {
+              "op": "load",
+              "dst": "t4",
+              "args": [
+                {
+                  "var": "a"
+                },
+                {
+                  "var": "i"
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "t3",
+              "sym": "!=",
+              "args": [
+                {
+                  "var": "t4"
+                },
+                {
+                  "var": "v"
+                }
+              ]
+            },
+            {
+              "op": "if",
+              "args": [
+                {
+                  "var": "t3"
+                }
+              ],
+              "target": "L1_body"
+            },
+            {
+              "op": "goto",
+              "target": "L1_end"
+            },
+            {
+              "op": "label",
+              "target": "L1_body"
+            },
+            {
+              "op": "binop",
+              "dst": "t",
+              "sym": "*",
+              "args": [
+                {
+                  "var": "i"
+                },
+                {
+                  "int": 2
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "c",
+              "sym": "+",
+              "args": [
+                {
+                  "var": "c"
+                },
+                {
+                  "int": 1
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "i",
+              "sym": "+",
+              "args": [
+                {
+                  "var": "i"
+                },
+                {
+                  "int": 1
+                }
+              ]
+            },
+            {
+              "op": "goto",
+              "target": "L1_while"
+            },
+            {
+              "op": "label",
+              "target": "L1_end"
+            },
+            {
+              "op": "return",
+              "args": [
+                {
+                  "var": "c"
+                }
+              ]
+            }
+          ]
+        },
+        "cfg": {
+          "blocks": [
+            {
+              "name": "B1",
+              "instrs": [
+                "i := 0",
+                "c := 0"
+              ],
+              "succ": [
+                {
+                  "to": "B2",
+                  "kind": ""
+                }
+              ],
+              "pred": [],
+              "live_in": [
+                "a",
+                "v"
+              ],
+              "live_out": [
+                "a",
+                "c",
+                "i",
+                "v"
+              ]
+            },
+            {
+              "name": "B2",
+              "instrs": [
+                "L1_while:",
+                "t2 := length(a)",
+                "t1 := i < t2",
+                "if t1 goto L2_and",
+                "goto L1_end"
+              ],
+              "succ": [
+                {
+                  "to": "B3",
+                  "kind": "true"
+                },
+                {
+                  "to": "B5",
+                  "kind": "false"
+                }
+              ],
+              "pred": [
+                "B1",
+                "B4"
+              ],
+              "live_in": [
+                "a",
+                "c",
+                "i",
+                "v"
+              ],
+              "live_out": [
+                "a",
+                "c",
+                "i",
+                "v"
+              ]
+            },
+            {
+              "name": "B3",
+              "instrs": [
+                "L2_and:",
+                "t4 := load a[i]",
+                "t3 := t4 != v",
+                "if t3 goto L1_body",
+                "goto L1_end"
+              ],
+              "succ": [
+                {
+                  "to": "B4",
+                  "kind": "true"
+                },
+                {
+                  "to": "B5",
+                  "kind": "false"
+                }
+              ],
+              "pred": [
+                "B2"
+              ],
+              "live_in": [
+                "a",
+                "c",
+                "i",
+                "v"
+              ],
+              "live_out": [
+                "a",
+                "c",
+                "i",
+                "v"
+              ]
+            },
+            {
+              "name": "B4",
+              "instrs": [
+                "L1_body:",
+                "t := i * 2",
+                "c := c + 1",
+                "i := i + 1",
+                "goto L1_while"
+              ],
+              "succ": [
+                {
+                  "to": "B2",
+                  "kind": ""
+                }
+              ],
+              "pred": [
+                "B3"
+              ],
+              "live_in": [
+                "a",
+                "c",
+                "i",
+                "v"
+              ],
+              "live_out": [
+                "a",
+                "c",
+                "i",
+                "v"
+              ]
+            },
+            {
+              "name": "B5",
+              "instrs": [
+                "L1_end:",
+                "return c"
+              ],
+              "succ": [
+                {
+                  "to": "exit",
+                  "kind": ""
+                }
+              ],
+              "pred": [
+                "B2",
+                "B3"
+              ],
+              "live_in": [
+                "c"
+              ],
+              "live_out": []
+            }
+          ],
+          "back_edges": [
+            [
+              "B4",
+              "B2"
+            ]
+          ]
+        },
+        "interference": {
+          "nodes": [
+            "t1",
+            "t2",
+            "t3",
+            "t4"
+          ],
+          "edges": [],
+          "coloring": {
+            "t1": 0,
+            "t2": 0,
+            "t3": 0,
+            "t4": 0
+          },
+          "colors": 1,
+          "spilled": []
+        },
+        "metrics": {
+          "instructions": 15,
+          "temporaries": 4,
+          "blocks": 5,
+          "colors": 1,
+          "spilled": 0
+        }
+      },
+      "after": {
+        "ir": {
+          "name": "count",
+          "params": [
+            {
+              "name": "a",
+              "type": "int[]"
+            },
+            {
+              "name": "v",
+              "type": "int"
+            }
+          ],
+          "results": [
+            {
+              "name": "c",
+              "type": "int"
+            }
+          ],
+          "vars": {
+            "a": {
+              "type": "int[]",
+              "temp": false
+            },
+            "v": {
+              "type": "int",
+              "temp": false
+            },
+            "c": {
+              "type": "int",
+              "temp": false
+            },
+            "i": {
+              "type": "int",
+              "temp": false
+            },
+            "t": {
+              "type": "int",
+              "temp": false
+            },
+            "t1": {
+              "type": "bool",
+              "temp": true
+            },
+            "t2": {
+              "type": "int",
+              "temp": true
+            },
+            "t3": {
+              "type": "bool",
+              "temp": true
+            },
+            "t4": {
+              "type": "int",
+              "temp": true
+            }
+          },
+          "body": [
+            {
+              "op": "copy",
+              "dst": "i",
+              "args": [
+                {
+                  "int": 0
+                }
+              ]
+            },
+            {
+              "op": "copy",
+              "dst": "c",
+              "args": [
+                {
+                  "int": 0
+                }
+              ]
+            },
+            {
+              "op": "label",
+              "target": "L1_while"
+            },
+            {
+              "op": "length",
+              "dst": "t2",
+              "args": [
+                {
+                  "var": "a"
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "t1",
+              "sym": "<",
+              "args": [
+                {
+                  "var": "i"
+                },
+                {
+                  "var": "t2"
+                }
+              ]
+            },
+            {
+              "op": "if",
+              "args": [
+                {
+                  "var": "t1"
+                }
+              ],
+              "target": "L2_and"
+            },
+            {
+              "op": "goto",
+              "target": "L1_end"
+            },
+            {
+              "op": "label",
+              "target": "L2_and"
+            },
+            {
+              "op": "load",
+              "dst": "t4",
+              "args": [
+                {
+                  "var": "a"
+                },
+                {
+                  "var": "i"
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "t3",
+              "sym": "!=",
+              "args": [
+                {
+                  "var": "t4"
+                },
+                {
+                  "var": "v"
+                }
+              ]
+            },
+            {
+              "op": "if",
+              "args": [
+                {
+                  "var": "t3"
+                }
+              ],
+              "target": "L1_body"
+            },
+            {
+              "op": "goto",
+              "target": "L1_end"
+            },
+            {
+              "op": "label",
+              "target": "L1_body"
+            },
+            {
+              "op": "binop",
+              "dst": "c",
+              "sym": "+",
+              "args": [
+                {
+                  "var": "c"
+                },
+                {
+                  "int": 1
+                }
+              ]
+            },
+            {
+              "op": "binop",
+              "dst": "i",
+              "sym": "+",
+              "args": [
+                {
+                  "var": "i"
+                },
+                {
+                  "int": 1
+                }
+              ]
+            },
+            {
+              "op": "goto",
+              "target": "L1_while"
+            },
+            {
+              "op": "label",
+              "target": "L1_end"
+            },
+            {
+              "op": "return",
+              "args": [
+                {
+                  "var": "c"
+                }
+              ]
+            }
+          ]
+        },
+        "cfg": {
+          "blocks": [
+            {
+              "name": "B1",
+              "instrs": [
+                "i := 0",
+                "c := 0"
+              ],
+              "succ": [
+                {
+                  "to": "B2",
+                  "kind": ""
+                }
+              ],
+              "pred": [],
+              "live_in": [
+                "a",
+                "v"
+              ],
+              "live_out": [
+                "a",
+                "c",
+                "i",
+                "v"
+              ]
+            },
+            {
+              "name": "B2",
+              "instrs": [
+                "L1_while:",
+                "t2 := length(a)",
+                "t1 := i < t2",
+                "if t1 goto L2_and",
+                "goto L1_end"
+              ],
+              "succ": [
+                {
+                  "to": "B3",
+                  "kind": "true"
+                },
+                {
+                  "to": "B5",
+                  "kind": "false"
+                }
+              ],
+              "pred": [
+                "B1",
+                "B4"
+              ],
+              "live_in": [
+                "a",
+                "c",
+                "i",
+                "v"
+              ],
+              "live_out": [
+                "a",
+                "c",
+                "i",
+                "v"
+              ]
+            },
+            {
+              "name": "B3",
+              "instrs": [
+                "L2_and:",
+                "t4 := load a[i]",
+                "t3 := t4 != v",
+                "if t3 goto L1_body",
+                "goto L1_end"
+              ],
+              "succ": [
+                {
+                  "to": "B4",
+                  "kind": "true"
+                },
+                {
+                  "to": "B5",
+                  "kind": "false"
+                }
+              ],
+              "pred": [
+                "B2"
+              ],
+              "live_in": [
+                "a",
+                "c",
+                "i",
+                "v"
+              ],
+              "live_out": [
+                "a",
+                "c",
+                "i",
+                "v"
+              ]
+            },
+            {
+              "name": "B4",
+              "instrs": [
+                "L1_body:",
+                "c := c + 1",
+                "i := i + 1",
+                "goto L1_while"
+              ],
+              "succ": [
+                {
+                  "to": "B2",
+                  "kind": ""
+                }
+              ],
+              "pred": [
+                "B3"
+              ],
+              "live_in": [
+                "a",
+                "c",
+                "i",
+                "v"
+              ],
+              "live_out": [
+                "a",
+                "c",
+                "i",
+                "v"
+              ]
+            },
+            {
+              "name": "B5",
+              "instrs": [
+                "L1_end:",
+                "return c"
+              ],
+              "succ": [
+                {
+                  "to": "exit",
+                  "kind": ""
+                }
+              ],
+              "pred": [
+                "B2",
+                "B3"
+              ],
+              "live_in": [
+                "c"
+              ],
+              "live_out": []
+            }
+          ],
+          "back_edges": [
+            [
+              "B4",
+              "B2"
+            ]
+          ]
+        },
+        "interference": {
+          "nodes": [
+            "t1",
+            "t2",
+            "t3",
+            "t4"
+          ],
+          "edges": [],
+          "coloring": {
+            "t1": 0,
+            "t2": 0,
+            "t3": 0,
+            "t4": 0
+          },
+          "colors": 1,
+          "spilled": []
+        },
+        "metrics": {
+          "instructions": 14,
+          "temporaries": 4,
+          "blocks": 5,
+          "colors": 1,
+          "spilled": 0
+        }
+      },
+      "rewrites": {
+        "const": 0,
+        "alg": 0,
+        "cse": 0,
+        "unreach": 0,
+        "dce": 1
+      }
+    }
+  ]
+}

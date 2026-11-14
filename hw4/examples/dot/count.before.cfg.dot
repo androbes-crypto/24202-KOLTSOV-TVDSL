@@ -1,0 +1,16 @@
+digraph "count.before" {
+  node [shape=box, fontname="monospace"];
+  exit [shape=oval];
+  B1 [label="B1\li := 0\lc := 0\l"];
+  B2 [label="B2\lL1_while:\lt2 := length(a)\lt1 := i < t2\lif t1 goto L2_and\lgoto L1_end\l"];
+  B3 [label="B3\lL2_and:\lt4 := load a[i]\lt3 := t4 != v\lif t3 goto L1_body\lgoto L1_end\l"];
+  B4 [label="B4\lL1_body:\lt := i * 2\lc := c + 1\li := i + 1\lgoto L1_while\l"];
+  B5 [label="B5\lL1_end:\lreturn c\l"];
+  B1 -> B2;
+  B2 -> B3 [label="true"];
+  B2 -> B5 [label="false"];
+  B3 -> B4 [label="true"];
+  B3 -> B5 [label="false"];
+  B4 -> B2 [style=dashed];
+  B5 -> exit;
+}

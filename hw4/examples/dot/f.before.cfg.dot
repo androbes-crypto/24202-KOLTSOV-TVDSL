@@ -1,0 +1,13 @@
+digraph "f.before" {
+  node [shape=box, fontname="monospace"];
+  exit [shape=oval];
+  B1 [label="B1\lt1 := x > 0\lif t1 goto L1_then\lgoto L1_else\l"];
+  B2 [label="B2\lL1_then:\lt2 := load a[x]\lr := t2 + 1\lgoto L1_end\l"];
+  B3 [label="B3\lL1_else:\lr := 0\l"];
+  B4 [label="B4\lL1_end:\lreturn r\l"];
+  B1 -> B2 [label="true"];
+  B1 -> B3 [label="false"];
+  B2 -> B4;
+  B3 -> B4;
+  B4 -> exit;
+}

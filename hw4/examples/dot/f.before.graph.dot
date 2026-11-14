@@ -1,0 +1,5 @@
+graph "f.before" {
+  node [shape=circle, style=filled];
+  t1 [label="t1\nr0", fillcolor="#8dd3c7"];
+  t2 [label="t2\nr0", fillcolor="#8dd3c7"];
+}

@@ -1,0 +1,6 @@
+digraph "expr.before" {
+  node [shape=box, fontname="monospace"];
+  exit [shape=oval];
+  B1 [label="B1\lx := a + b\ly := x + x\lt3 := a + b\lt5 := d * 2\lt4 := c - t5\lt2 := t3 * t4\lt7 := a - b\lt8 := c + d\lt6 := t7 * t8\lt1 := t2 + t6\lt9 := y * 1\lr := t1 + t9\lreturn r\l"];
+  B1 -> exit;
+}

@@ -1,0 +1,92 @@
+== IR до оптимизаций ==
+function expr(a: int, b: int, c: int, d: int) returns (r: int)
+    x := a + b
+    y := x + x
+    t3 := a + b
+    t5 := d * 2
+    t4 := c - t5
+    t2 := t3 * t4
+    t7 := a - b
+    t8 := c + d
+    t6 := t7 * t8
+    t1 := t2 + t6
+    t9 := y * 1
+    r := t1 + t9
+    return r
+
+== IR после оптимизаций (all) ==
+function expr(a: int, b: int, c: int, d: int) returns (r: int)
+    x := a + b
+    y := x + x
+    t5 := d * 2
+    t4 := c - t5
+    t2 := x * t4
+    t7 := a - b
+    t8 := c + d
+    t6 := t7 * t8
+    t1 := t2 + t6
+    r := t1 + y
+    return r
+
+== CFG до оптимизаций ==
+expr:
+B1 [вход]  pred: —  succ: exit
+    x := a + b
+    y := x + x
+    t3 := a + b
+    t5 := d * 2
+    t4 := c - t5
+    t2 := t3 * t4
+    t7 := a - b
+    t8 := c + d
+    t6 := t7 * t8
+    t1 := t2 + t6
+    t9 := y * 1
+    r := t1 + t9
+    return r
+
+== граф конфликтов до оптимизаций ==
+expr:
+вершин: 9, рёбер: 7
+  t1    r0      соседи: t9
+  t2    r0      соседи: t6, t7, t8
+  t3    r0      соседи: t4, t5
+  t4    r1      соседи: t3
+  t5    r1      соседи: t3
+  t6    r1      соседи: t2
+  t7    r1      соседи: t2, t8
+  t8    r2      соседи: t2, t7
+  t9    r1      соседи: t1
+цветов: 3
+
+== CFG после оптимизаций ==
+expr:
+B1 [вход]  pred: —  succ: exit
+    x := a + b
+    y := x + x
+    t5 := d * 2
+    t4 := c - t5
+    t2 := x * t4
+    t7 := a - b
+    t8 := c + d
+    t6 := t7 * t8
+    t1 := t2 + t6
+    r := t1 + y
+    return r
+
+== граф конфликтов после оптимизаций ==
+expr:
+вершин: 7, рёбер: 4
+  t1    r0      соседи: —
+  t2    r0      соседи: t6, t7, t8
+  t4    r0      соседи: —
+  t5    r0      соседи: —
+  t6    r1      соседи: t2
+  t7    r1      соседи: t2, t8
+  t8    r2      соседи: t2, t7
+цветов: 3
+
+== метрики (до -> после) ==
+expr: инструкций 13 -> 11, временных 9 -> 7, блоков 1 -> 1, цветов 3 -> 3
+  замен: const 2, alg 1, cse 1, unreach 0, dce 2
+

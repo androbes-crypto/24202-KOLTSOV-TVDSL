@@ -1,0 +1,82 @@
+== IR до оптимизаций ==
+function f(x: int, a: int[]) returns (r: int)
+    t1 := x > 0
+    if t1 goto L1_then
+    goto L1_else
+L1_then:
+    t2 := load a[x]
+    r := t2 + 1
+    goto L1_end
+L1_else:
+    r := 0
+L1_end:
+    return r
+
+== IR после оптимизаций (all) ==
+function f(x: int, a: int[]) returns (r: int)
+    t1 := x > 0
+    if t1 goto L1_then
+    goto L1_else
+L1_then:
+    t2 := load a[x]
+    r := t2 + 1
+    goto L1_end
+L1_else:
+    r := 0
+L1_end:
+    return r
+
+== CFG до оптимизаций ==
+f:
+B1 [вход]  pred: —  succ: B2 (true), B3 (false)
+    t1 := x > 0
+    if t1 goto L1_then
+    goto L1_else
+B2  pred: B1  succ: B4
+  L1_then:
+    t2 := load a[x]
+    r := t2 + 1
+    goto L1_end
+B3  pred: B1  succ: B4
+  L1_else:
+    r := 0
+B4  pred: B2, B3  succ: exit
+  L1_end:
+    return r
+
+== граф конфликтов до оптимизаций ==
+f:
+вершин: 2, рёбер: 0
+  t1    r0      соседи: —
+  t2    r0      соседи: —
+цветов: 1
+
+== CFG после оптимизаций ==
+f:
+B1 [вход]  pred: —  succ: B2 (true), B3 (false)
+    t1 := x > 0
+    if t1 goto L1_then
+    goto L1_else
+B2  pred: B1  succ: B4
+  L1_then:
+    t2 := load a[x]
+    r := t2 + 1
+    goto L1_end
+B3  pred: B1  succ: B4
+  L1_else:
+    r := 0
+B4  pred: B2, B3  succ: exit
+  L1_end:
+    return r
+
+== граф конфликтов после оптимизаций ==
+f:
+вершин: 2, рёбер: 0
+  t1    r0      соседи: —
+  t2    r0      соседи: —
+цветов: 1
+
+== метрики (до -> после) ==
+f: инструкций 8 -> 8, временных 2 -> 2, блоков 4 -> 4, цветов 1 -> 1
+  замен: const 0, alg 0, cse 0, unreach 0, dce 0
+
