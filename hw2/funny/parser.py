@@ -1,4 +1,5 @@
-from .lexer import Diagnostic, Token, lex, token_names
+# Парсер Funny: рекурсивный спуск по EBNF из grammar.txt, ошибки — в режиме паники (P03).
+from .lexer import TOKEN_NAMES, Diagnostic, lex
 from .nodes import Node
 
 STMT_START = {"LBRACE", "KW_VAR", "KW_IF", "KW_WHILE", "KW_ASSERT", "KW_ASSUME", "IDENT"}
@@ -11,30 +12,30 @@ MULOPS = {"STAR", "SLASH", "PERCENT"}
 
 
 class ParserLoop(RuntimeError):
+    # бросается, если парсер слишком долго стоит на месте (защита от зацикливания)
     pass
 
 
 class Parser:
-    def __init__(self, tokens: list[Token], diagnostics: list[Diagnostic]):
+    def __init__(self, tokens, diagnostics):
         self.tokens = tokens
         self.i = 0
         self.diags = diagnostics
-        self.names = token_names()
         self.panic = False
         self.error_at = -1
         self.steps = 0
         self.max_steps = 500 * (len(tokens) + 10)
 
-    def peek(self) -> Token:
+    def peek(self):
         self.steps += 1
         if self.steps > self.max_steps:
             raise ParserLoop("парсер не продвигается по входу")
         return self.tokens[self.i]
 
-    def at(self, *kinds) -> bool:
+    def at(self, *kinds):
         return self.peek().kind in kinds
 
-    def advance(self) -> Token:
+    def advance(self):
         tok = self.peek()
         if tok.kind != "EOF":
             self.i += 1
@@ -43,7 +44,7 @@ class Parser:
     def prev(self):
         return self.tokens[self.i - 1] if self.i > 0 else None
 
-    def describe(self, tok: Token) -> str:
+    def describe(self, tok):
         if tok.kind == "EOF":
             return "файл закончился"
         if tok.kind == "IDENT":
@@ -52,23 +53,25 @@ class Parser:
             return f"найдено число {tok.lexeme}"
         return f"найдено '{tok.lexeme}'"
 
-    def error(self, tok: Token, message: str):
+    # после первой ошибки молчим, пока не дойдём до точки синхронизации
+    def error(self, tok, message):
         if self.panic:
             return
         self.diags.append(Diagnostic(tok.line, tok.col, message))
         self.panic = True
         self.error_at = self.i
 
-    def expected(self, what: str):
+    def expected(self, what):
         tok = self.peek()
         self.error(tok, f"ожидалось {what}, но {self.describe(tok)}")
 
-    def expect(self, kind: str, what: str = None):
+    def expect(self, kind, what=None):
         if self.at(kind):
             return self.advance()
-        self.expected(what or self.names.get(kind, kind))
+        self.expected(what or TOKEN_NAMES.get(kind, kind))
         return None
 
+    # пропускаем токены до одного из kinds
     def sync(self, kinds):
         while not self.at("EOF", *kinds):
             self.advance()
@@ -87,7 +90,7 @@ class Parser:
         if self.panic and self.at(*STMT_START):
             self.panic = False
 
-    def program(self) -> Node:
+    def program(self):
         start = self.peek()
         functions = []
         if self.at("EOF"):
@@ -102,7 +105,7 @@ class Parser:
                 self.sync({"KW_FUNCTION"})
         return Node("Program", start, functions=functions)
 
-    def function(self) -> Node:
+    def function(self):
         kw = self.advance()
         name = self.expect("IDENT", "имя функции")
         self.expect("LPAREN")
@@ -133,7 +136,7 @@ class Parser:
         return Node("Function", kw, name=name.lexeme if name else None, params=params,
                     returns=returns, requires=requires, ensures=ensures, body=body)
 
-    def params(self) -> list:
+    def params(self):
         params = []
         if self.at("IDENT"):
             params.append(self.param())
@@ -142,7 +145,7 @@ class Parser:
                 params.append(self.param())
         return params
 
-    def param(self) -> Node:
+    def param(self):
         name = self.expect("IDENT", "имя параметра")
         typ = None
         if self.at("COLON"):
@@ -162,7 +165,7 @@ class Parser:
             base += "[]"
         return base
 
-    def block(self) -> Node:
+    def block(self):
         lb = self.expect("LBRACE")
         stmts = []
         while not self.at("RBRACE", "EOF", "KW_FUNCTION"):
@@ -211,7 +214,7 @@ class Parser:
         self.panic = False
         return None
 
-    def var_decl(self) -> Node:
+    def var_decl(self):
         kw = self.advance()
         name = self.expect("IDENT", "имя переменной")
         typ = None
@@ -225,7 +228,7 @@ class Parser:
         self.expect("SEMI")
         return Node("VarDecl", kw, name=name.lexeme if name else None, type=typ, init=init)
 
-    def if_stmt(self) -> Node:
+    def if_stmt(self):
         kw = self.advance()
         self.expect("LPAREN")
         cond = self.expr()
@@ -238,7 +241,7 @@ class Parser:
             orelse = self.statement()
         return Node("If", kw, cond=cond, then=then, orelse=orelse)
 
-    def while_stmt(self) -> Node:
+    def while_stmt(self):
         kw = self.advance()
         self.expect("LPAREN")
         cond = self.expr()
@@ -251,7 +254,7 @@ class Parser:
         body = self.statement()
         return Node("While", kw, cond=cond, invariants=invariants, body=body)
 
-    def ident_statement(self) -> Node:
+    def ident_statement(self):
         name = self.advance()
         if self.at("LPAREN"):
             call = self.call_rest(name)
@@ -274,28 +277,29 @@ class Parser:
                     value=self.desugar_update(Node("Var", name, name=name.lexeme), indices, value, eq),
                     sugar="array-update")
 
-    def desugar_update(self, array: Node, indices: list, value: Node, at: Token) -> Node:
+    # a[i][j] = v  ->  a = Update(a, i, Update(a[i], j, v))
+    def desugar_update(self, array, indices, value, at):
         if not indices:
             return value
         index = indices[0]
         inner = self.desugar_update(Node("Index", at, array=array, index=index), indices[1:], value, at)
         return Node("Update", at, array=array, index=index, value=inner)
 
-    def expr(self) -> Node:
+    def expr(self):
         left = self.and_expr()
         while self.at("OR"):
             op = self.advance()
             left = Node("Binary", op, op=op.lexeme, left=left, right=self.and_expr())
         return left
 
-    def and_expr(self) -> Node:
+    def and_expr(self):
         left = self.cmp_expr()
         while self.at("AND"):
             op = self.advance()
             left = Node("Binary", op, op=op.lexeme, left=left, right=self.cmp_expr())
         return left
 
-    def cmp_expr(self) -> Node:
+    def cmp_expr(self):
         left = self.add_expr()
         if self.at(*RELOPS):
             op = self.advance()
@@ -306,27 +310,27 @@ class Parser:
                                 f"подряд, используйте скобки или '&&'")
         return left
 
-    def add_expr(self) -> Node:
+    def add_expr(self):
         left = self.mul_expr()
         while self.at(*ADDOPS):
             op = self.advance()
             left = Node("Binary", op, op=op.lexeme, left=left, right=self.mul_expr())
         return left
 
-    def mul_expr(self) -> Node:
+    def mul_expr(self):
         left = self.unary()
         while self.at(*MULOPS):
             op = self.advance()
             left = Node("Binary", op, op=op.lexeme, left=left, right=self.unary())
         return left
 
-    def unary(self) -> Node:
+    def unary(self):
         if self.at("MINUS", "NOT"):
             op = self.advance()
             return Node("Unary", op, op=op.lexeme, operand=self.unary())
         return self.postfix()
 
-    def postfix(self) -> Node:
+    def postfix(self):
         node = self.primary()
         while self.at("LBRACKET"):
             lb = self.advance()
@@ -335,7 +339,7 @@ class Parser:
             node = Node("Index", lb, array=node, index=index)
         return node
 
-    def primary(self) -> Node:
+    def primary(self):
         tok = self.peek()
         if tok.kind == "INT":
             self.advance()
@@ -362,7 +366,7 @@ class Parser:
         self.expected("выражение")
         return Node("Error", tok)
 
-    def call_rest(self, name: Token) -> Node:
+    def call_rest(self, name):
         lp = self.advance()
         args = []
         if not self.at("RPAREN"):
@@ -374,11 +378,11 @@ class Parser:
         return Node("Call", name, name=name.lexeme, args=args)
 
 
-def parse_tokens(tokens: list[Token], diagnostics: list[Diagnostic]) -> Node:
+def parse_tokens(tokens, diagnostics):
     return Parser(tokens, diagnostics).program()
 
 
-def parse(text: str) -> tuple[Node, list[Diagnostic]]:
+def parse(text):
     tokens, diags = lex(text)
     ast = parse_tokens(tokens, diags)
     return ast, sorted(diags, key=lambda d: (d.line, d.col))

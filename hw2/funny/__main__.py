@@ -7,25 +7,28 @@ from .nodes import dumps, to_text
 from .parser import parse
 
 
-def read(path: str) -> str:
+def read(path):
     if path == "-":
-        return sys.stdin.buffer.read().decode("utf-8")
+        return sys.stdin.read()
     with open(path, encoding="utf-8", newline="") as f:
         return f.read()
 
 
-def cmd_parse(args) -> int:
+def cmd_parse(args):
     ast, diags = parse(read(args.file))
     for d in diags:
         print(f"{args.file}:{d.line}:{d.col}: ошибка: {d.message}", file=sys.stderr)
     if not diags or args.partial:
-        print(dumps(ast) if args.json else to_text(ast), end="" if not args.json else "\n")
+        if args.json:
+            print(dumps(ast))
+        else:
+            print(to_text(ast), end="")
     if diags:
         print(f"ошибок: {len(diags)}", file=sys.stderr)
     return 1 if diags else 0
 
 
-def cmd_tokens(args) -> int:
+def cmd_tokens(args):
     tokens, diags = lex(read(args.file))
     for t in tokens:
         print(t)
@@ -34,14 +37,15 @@ def cmd_tokens(args) -> int:
     return 1 if diags else 0
 
 
-def cmd_test(args) -> int:
+def cmd_test(args):
     from .testing import run_fuzz, run_snapshots
     results = run_snapshots(update=args.update)
     if not args.update:
         results.append(run_fuzz(args.fuzz))
     failed = 0
     for r in results:
-        failed += not r.ok
+        if not r.ok:
+            failed += 1
         if args.verbose or not r.ok or r.group == "fuzz":
             print(f"{'PASS' if r.ok else 'FAIL'}  [{r.group:4}] {r.name}")
             if r.detail:
@@ -51,7 +55,7 @@ def cmd_test(args) -> int:
     return 1 if failed else 0
 
 
-def main(argv=None) -> int:
+def main(argv=None):
     p = argparse.ArgumentParser(prog="python3 -m funny", description="HW2: LL(1)-парсер языка Funny")
     sub = p.add_subparsers(dest="cmd", required=True)
     a = sub.add_parser("parse", help="разобрать программу и вывести AST")
@@ -74,7 +78,11 @@ def main(argv=None) -> int:
         return 0
     if args.cmd == "ll1":
         return report(args.verbose, args.table)
-    return {"parse": cmd_parse, "tokens": cmd_tokens, "test": cmd_test}[args.cmd](args)
+    if args.cmd == "parse":
+        return cmd_parse(args)
+    if args.cmd == "tokens":
+        return cmd_tokens(args)
+    return cmd_test(args)
 
 
 if __name__ == "__main__":

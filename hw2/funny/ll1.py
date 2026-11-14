@@ -1,15 +1,18 @@
 import re
 
-from .lexer import ROOT, token_names
+from .lexer import ROOT, TOKEN_NAMES
 
 EPS = "ε"
 RESOLVED = {("else_part", "'else'"): "висячий else: выбираем 'else' (else относится к ближайшему if)"}
 
 
-def load_bnf(path=ROOT / "grammar.txt") -> tuple[dict, str]:
+# читает BNF между строками '== BNF ==' и '== END ==' в grammar.txt
+def load_bnf(path=ROOT / "grammar.txt"):
     text = open(path, encoding="utf-8").read()
     body = text.split("== BNF ==", 1)[1].split("== END ==", 1)[0]
-    rules, order, current = {}, [], None
+    rules = {}
+    order = []
+    current = None
     for raw in body.splitlines():
         line = raw.strip()
         if not line:
@@ -30,14 +33,18 @@ def load_bnf(path=ROOT / "grammar.txt") -> tuple[dict, str]:
     return rules, order[0]
 
 
-def is_terminal(sym: str, rules: dict) -> bool:
+def is_terminal(sym, rules):
     return sym not in rules
 
 
-def first_of(seq, first, rules) -> set:
+# FIRST цепочки символов
+def first_of(seq, first, rules):
     out = set()
     for sym in seq:
-        f = first[sym] if not is_terminal(sym, rules) else {sym}
+        if is_terminal(sym, rules):
+            f = {sym}
+        else:
+            f = first[sym]
         out |= f - {EPS}
         if EPS not in f:
             return out
@@ -45,7 +52,8 @@ def first_of(seq, first, rules) -> set:
     return out
 
 
-def analyze(rules: dict, start: str):
+# FIRST и FOLLOW итерациями до неподвижной точки, затем поиск конфликтов LL(1)
+def analyze(rules, start):
     first = {a: set() for a in rules}
     changed = True
     while changed:
@@ -66,7 +74,9 @@ def analyze(rules: dict, start: str):
                     if is_terminal(sym, rules):
                         continue
                     f = first_of(alt[i + 1:], first, rules)
-                    add = (f - {EPS}) | (follow[a] if EPS in f else set())
+                    add = f - {EPS}
+                    if EPS in f:
+                        add |= follow[a]
                     if not add <= follow[sym]:
                         follow[sym] |= add
                         changed = True
@@ -85,23 +95,28 @@ def analyze(rules: dict, start: str):
     return first, follow, conflicts
 
 
-def predict_table(rules: dict, first: dict, follow: dict) -> dict:
+def predict_table(rules, first, follow):
     table = {}
     for a, alts in rules.items():
         for alt in alts:
             f = first_of(alt, first, rules)
-            for t in (f - {EPS}) | (follow[a] if EPS in f else set()):
+            columns = f - {EPS}
+            if EPS in f:
+                columns |= follow[a]
+            for t in columns:
                 table.setdefault((a, t), []).append(alt)
     return table
 
 
-def show_alt(alt) -> str:
-    return " ".join(alt) if alt else EPS
+def show_alt(alt):
+    if not alt:
+        return EPS
+    return " ".join(alt)
 
 
-def check_terminals(rules: dict) -> list[str]:
-    names = token_names()
-    known = set(names) | set(names.values())
+# все терминалы грамматики должны быть токенами из tokens.spec
+def check_terminals(rules):
+    known = set(TOKEN_NAMES) | set(TOKEN_NAMES.values())
     bad = []
     for alts in rules.values():
         for alt in alts:
@@ -111,7 +126,7 @@ def check_terminals(rules: dict) -> list[str]:
     return sorted(set(bad))
 
 
-def report(verbose: bool = False, table: bool = False) -> int:
+def report(verbose=False, table=False):
     rules, start = load_bnf()
     first, follow, conflicts = analyze(rules, start)
     if table:
@@ -134,8 +149,16 @@ def report(verbose: bool = False, table: bool = False) -> int:
     unresolved = 0
     for a, t, what in conflicts:
         note = RESOLVED.get((a, t))
-        print(f"конфликт {what}: {a} по {t}" + (f" — разрешён: {note}" if note else " — НЕ РАЗРЕШЁН"))
-        unresolved += note is None
-    print("грамматика LL(1)" + (" (с учётом разрешённых конфликтов)" if conflicts else "")
-          if not unresolved and not bad else "грамматика НЕ LL(1)")
-    return 1 if unresolved or bad else 0
+        if note:
+            print(f"конфликт {what}: {a} по {t} — разрешён: {note}")
+        else:
+            print(f"конфликт {what}: {a} по {t} — НЕ РАЗРЕШЁН")
+            unresolved += 1
+    if unresolved or bad:
+        print("грамматика НЕ LL(1)")
+        return 1
+    if conflicts:
+        print("грамматика LL(1) (с учётом разрешённых конфликтов)")
+    else:
+        print("грамматика LL(1)")
+    return 0

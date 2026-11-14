@@ -1,5 +1,5 @@
+# Подключение лексера из HW1: таблица ДКА строится по tokens.spec, токены получают строку и столбец.
 import os
-import re
 import sys
 from pathlib import Path
 from typing import NamedTuple
@@ -9,6 +9,61 @@ HW1 = Path(os.environ.get("FUNNY_HW1", ROOT.parent / "hw1")).resolve()
 SPEC = ROOT / "tokens.spec"
 BUILD = ROOT / "build"
 TABLE = BUILD / "dfa.json"
+
+if not (HW1 / "funnylex").is_dir():
+    raise RuntimeError(f"не найден лексер HW1 в {HW1} (укажите путь в FUNNY_HW1)")
+if str(HW1) not in sys.path:
+    sys.path.insert(0, str(HW1))
+
+import funnylex.build
+from funnylex.lexer import DFALexer
+
+# как показывать токены в сообщениях об ошибках
+TOKEN_NAMES = {
+    "IDENT": "идентификатор",
+    "INT": "число",
+    "EOF": "конец файла",
+    "KW_FUNCTION": "'function'",
+    "KW_RETURNS": "'returns'",
+    "KW_REQUIRES": "'requires'",
+    "KW_ENSURES": "'ensures'",
+    "KW_VAR": "'var'",
+    "KW_WHILE": "'while'",
+    "KW_IF": "'if'",
+    "KW_ELSE": "'else'",
+    "KW_ASSERT": "'assert'",
+    "KW_ASSUME": "'assume'",
+    "KW_INVARIANT": "'invariant'",
+    "KW_LENGTH": "'length'",
+    "KW_INT": "'int'",
+    "KW_BOOL": "'bool'",
+    "KW_TRUE": "'true'",
+    "KW_FALSE": "'false'",
+    "EQ": "'=='",
+    "NE": "'!='",
+    "LE": "'<='",
+    "GE": "'>='",
+    "LT": "'<'",
+    "GT": "'>'",
+    "ASSIGN": "'='",
+    "AND": "'&&'",
+    "OR": "'||'",
+    "NOT": "'!'",
+    "PLUS": "'+'",
+    "MINUS": "'-'",
+    "STAR": "'*'",
+    "SLASH": "'/'",
+    "PERCENT": "'%'",
+    "LPAREN": "'('",
+    "RPAREN": "')'",
+    "LBRACKET": "'['",
+    "RBRACKET": "']'",
+    "LBRACE": "'{'",
+    "RBRACE": "'}'",
+    "COMMA": "','",
+    "SEMI": "';'",
+    "COLON": "':'",
+}
 
 
 class Token(NamedTuple):
@@ -31,86 +86,64 @@ class Diagnostic(NamedTuple):
         return f"{self.line}:{self.col}: {self.message}"
 
 
-def _hw1():
-    if not (HW1 / "funnylex").is_dir():
-        raise RuntimeError(f"не найден лексер HW1 в {HW1} (укажите путь в FUNNY_HW1)")
-    if str(HW1) not in sys.path:
-        sys.path.insert(0, str(HW1))
-    import funnylex.build
-    import funnylex.lexer
-    import funnylex.nfa
-    return funnylex
-
-
-def build_table(force: bool = False) -> Path:
+def build_table(force=False):
+    # пересобираем таблицу, если её нет или tokens.spec новее
     if force or not TABLE.exists() or TABLE.stat().st_mtime < SPEC.stat().st_mtime:
-        fl = _hw1()
-        fl.build.write_all(fl.build.build(str(SPEC)), str(BUILD))
+        result = funnylex.build.build(str(SPEC))
+        funnylex.build.write_all(result, str(BUILD))
     return TABLE
 
 
-_cache = {}
+lexer = None
 
 
-def _lexer():
-    if "lexer" not in _cache:
-        fl = _hw1()
-        _cache["lexer"] = fl.lexer.DFALexer.from_file(str(build_table()))
-    return _cache["lexer"]
+def get_lexer():
+    global lexer
+    if lexer is None:
+        lexer = DFALexer.from_file(str(build_table()))
+    return lexer
 
 
-def token_names() -> dict:
-    if "names" not in _cache:
-        fl = _hw1()
-        names = {"IDENT": "идентификатор", "INT": "число", "EOF": "конец файла"}
-        for rule in fl.nfa.load_spec(str(SPEC)):
-            if rule.name not in names and re.fullmatch(r"(?:\\.|[^\\\[\]()*+?|.^$])+", rule.regex):
-                names[rule.name] = "'" + re.sub(r"\\(.)", r"\1", rule.regex) + "'"
-        _cache["names"] = names
-    return _cache["names"]
+def position(text, offset):
+    # строка и столбец считаются с 1
+    line = text.count("\n", 0, offset) + 1
+    line_start = text.rfind("\n", 0, offset) + 1
+    return line, offset - line_start + 1
 
 
-class Positions:
-    def __init__(self, text: str):
-        self.starts = [0] + [m.end() for m in re.finditer(r"\n", text)]
+def lex(text):
+    tokens = []
+    diags = []
+    # подряд идущие символы вне ASCII выдаём одной ошибкой
+    bad_start = None
+    bad_text = ""
+    bad_end = -1
 
-    def __call__(self, offset: int) -> tuple[int, int]:
-        lo, hi = 0, len(self.starts) - 1
-        while lo < hi:
-            mid = (lo + hi + 1) // 2
-            if self.starts[mid] <= offset:
-                lo = mid
-            else:
-                hi = mid - 1
-        return lo + 1, offset - self.starts[lo] + 1
-
-
-def lex(text: str) -> tuple[list[Token], list[Diagnostic]]:
-    pos = Positions(text)
-    tokens, diags = [], []
-    run_start, run_text, run_end = None, "", -1
-    for t in _lexer().tokenize(text):
-        line, col = pos(t.offset)
+    for t in get_lexer().tokenize(text):
+        line, col = position(text, t.offset)
         if t.type == "ERROR" and t.error != "BAD_INT" and ord(t.lexeme[0]) > 127:
-            if t.offset == run_end:
-                run_text += t.lexeme
+            if t.offset == bad_end:
+                bad_text += t.lexeme
             else:
-                if run_start is not None:
-                    diags.append(Diagnostic(*run_start, f"лексическая ошибка: символы вне ASCII '{run_text}'"))
-                run_start, run_text = (line, col), t.lexeme
-            run_end = t.offset + len(t.lexeme)
-            continue
-        if t.type == "ERROR" and t.error == "BAD_INT":
+                if bad_start is not None:
+                    diags.append(Diagnostic(bad_start[0], bad_start[1],
+                                            f"лексическая ошибка: символы вне ASCII '{bad_text}'"))
+                bad_start = (line, col)
+                bad_text = t.lexeme
+            bad_end = t.offset + len(t.lexeme)
+        elif t.type == "ERROR" and t.error == "BAD_INT":
             diags.append(Diagnostic(line, col, f"лексическая ошибка: неверное число '{t.lexeme}': "
                                                f"ведущие нули запрещены"))
+            # парсеру всё равно отдаём число, чтобы не было лишних ошибок
             tokens.append(Token("INT", t.lexeme, line, col, t.offset))
-            continue
-        if t.type == "ERROR":
+        elif t.type == "ERROR":
             diags.append(Diagnostic(line, col, f"лексическая ошибка: неожиданный символ {t.lexeme!r}"))
-            continue
-        tokens.append(Token(t.type, t.lexeme, line, col, t.offset))
-    if run_start is not None:
-        diags.append(Diagnostic(*run_start, f"лексическая ошибка: символы вне ASCII '{run_text}'"))
-    line, col = pos(len(text))
+        else:
+            tokens.append(Token(t.type, t.lexeme, line, col, t.offset))
+
+    if bad_start is not None:
+        diags.append(Diagnostic(bad_start[0], bad_start[1], f"лексическая ошибка: символы вне ASCII '{bad_text}'"))
+    line, col = position(text, len(text))
     tokens.append(Token("EOF", "", line, col, len(text)))
-    return tokens, sorted(diags, key=lambda d: (d.line, d.col))
+    diags.sort(key=lambda d: (d.line, d.col))
+    return tokens, diags

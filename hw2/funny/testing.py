@@ -1,8 +1,6 @@
 import random
-import time
-from pathlib import Path
 
-from .lexer import ROOT, lex
+from .lexer import ROOT, Token, lex
 from .nodes import dumps, to_text
 from .parser import ParserLoop, parse, parse_tokens
 
@@ -11,19 +9,25 @@ TESTS = ROOT / "tests"
 
 class Result:
     def __init__(self, group, name, ok, detail=""):
-        self.group, self.name, self.ok, self.detail = group, name, ok, detail
+        self.group = group
+        self.name = name
+        self.ok = ok
+        self.detail = detail
 
 
-def _diff(expected: str, got: str) -> str:
-    exp, out = expected.splitlines(), got.splitlines()
+def _diff(expected, got):
+    exp = expected.splitlines()
+    out = got.splitlines()
     for n, (a, b) in enumerate(zip(exp, out), 1):
         if a != b:
             return f"строка {n}:\n        ожидалось: {a}\n        получено:  {b}"
     return f"разная длина: ожидалось {len(exp)} строк, получено {len(out)}"
 
 
-def load_cases(path: Path) -> list[dict]:
-    cases, current, section = [], None, None
+def load_cases(path):
+    cases = []
+    current = None
+    section = None
     for line in path.read_text(encoding="utf-8").splitlines():
         if line.startswith("=== "):
             current = {"name": line[4:].strip(), "program": [], "expected": []}
@@ -42,7 +46,7 @@ def load_cases(path: Path) -> list[dict]:
     return cases
 
 
-def save_cases(path: Path, cases: list[dict]):
+def save_cases(path, cases):
     blocks = []
     for case in cases:
         program = "".join(f"{line}\n" for line in case["program"])
@@ -51,7 +55,7 @@ def save_cases(path: Path, cases: list[dict]):
     path.write_text("\n".join(blocks), encoding="utf-8")
 
 
-def run_snapshots(update: bool = False) -> list[Result]:
+def run_snapshots(update=False):
     results = []
     for group, filename in (("ok", "positive.txt"), ("err", "negative.txt")):
         path = TESTS / filename
@@ -77,36 +81,39 @@ def run_snapshots(update: bool = False) -> list[Result]:
     return results
 
 
-def run_fuzz(count: int = 2000, seed: int = 2026) -> Result:
+# Портим корректные программы (удаляем, вставляем, переставляем токены) и проверяем,
+# что парсер на них не зацикливается и не падает.
+def run_fuzz(count=2000, seed=2026):
     rnd = random.Random(seed)
-    corpus = [lex(c["text"])[0][:-1] for c in load_cases(TESTS / "positive.txt")]
-    corpus = [toks for toks in corpus if toks]
-    pool = [t for toks in corpus for t in toks]
-    worst, started = 0.0, time.perf_counter()
+    corpus = []
+    for case in load_cases(TESTS / "positive.txt"):
+        tokens = lex(case["text"])[0][:-1]  # без EOF
+        if tokens:
+            corpus.append(tokens)
+    pool = [t for tokens in corpus for t in tokens]
+
     for n in range(count):
         toks = list(rnd.choice(corpus))
         for _ in range(rnd.randint(1, 6)):
-            op = rnd.random()
             k = rnd.randrange(len(toks) + 1)
-            if op < 0.4 and toks:
+            action = rnd.random()
+            if action < 0.4 and toks:
                 del toks[min(k, len(toks) - 1)]
-            elif op < 0.8:
+            elif action < 0.8:
                 toks.insert(k, rnd.choice(pool))
             elif toks:
                 j = rnd.randrange(len(toks))
                 toks[j], toks[k - 1] = toks[k - 1], toks[j]
         if n % 10 == 0:
+            # иногда — просто случайный набор токенов
             toks = [rnd.choice(pool) for _ in range(rnd.randint(0, 60))]
-        eof = toks[-1] if toks else None
-        toks.append(type(pool[0])("EOF", "", eof.line if eof else 1, eof.col + 1 if eof else 1, 0))
-        t0 = time.perf_counter()
+        line = toks[-1].line if toks else 1
+        col = toks[-1].col + 1 if toks else 1
+        toks.append(Token("EOF", "", line, col, 0))
         try:
             parse_tokens(toks, [])
         except ParserLoop:
             return Result("fuzz", "без зацикливания", False, f"зацикливание на варианте {n}")
         except RecursionError:
             return Result("fuzz", "без зацикливания", False, f"слишком глубокая рекурсия на варианте {n}")
-        worst = max(worst, time.perf_counter() - t0)
-    total = time.perf_counter() - started
-    return Result("fuzz", f"{count} испорченных программ без зацикливания", True,
-                  f"всего {total:.2f} c, худший разбор {worst * 1000:.1f} мс")
+    return Result("fuzz", f"{count} испорченных программ без зацикливания", True)
