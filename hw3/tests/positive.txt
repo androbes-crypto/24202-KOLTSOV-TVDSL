@@ -1,0 +1,171 @@
+=== локальные переменные с явными типами
+function f(x: int, flag: bool, a: int[]) returns (r: int)
+{
+  var y: int = x * 2;
+  var b: bool = flag && y > 0;
+  var c: int[] = a;
+  r = y + c[0];
+}
+--- ожидается
+function f(x: int, flag: bool, a: int[]) returns (r: int)
+  local y: int @3:3
+  local b: bool @4:3
+  local c: int[] @5:3
+
+=== вывод типов локальных переменных из первого присваивания
+function f(x: int, a: bool[]) returns (r: int)
+{
+  var n = x + 1;
+  var positive;
+  positive = n > 0;
+  var copy;
+  copy = a;
+  var first = copy[0];
+  if (first || positive) r = n; else r = 0;
+}
+--- ожидается
+function f(x: int, a: bool[]) returns (r: int)
+  local n: int @3:3 (выведен)
+  local positive: bool @4:3 (выведен)
+  local copy: bool[] @6:3 (выведен)
+  local first: bool @8:3 (выведен)
+
+=== вывод типа многомерного массива и его строки
+function f(m: int[][], i: int, j: int) returns (res: int[][])
+  requires 0 <= i && i < length(m)
+{
+  var row = m[i];
+  var cell = row[j];
+  res = m;
+  res[i][j] = cell + 1;
+  var size = length(res[0]);
+}
+--- ожидается
+function f(m: int[][], i: int, j: int) returns (res: int[][])
+  local row: int[] @4:3 (выведен)
+  local cell: int @5:3 (выведен)
+  local size: int @8:3 (выведен)
+
+=== вызовы функций, рекурсия и вызов функции, объявленной ниже
+function fact(n: int) returns (r: int)
+  requires n >= 0
+{
+  if (n == 0) r = 1; else r = n * fact(n - 1);
+}
+
+function main() returns (r: int)
+{
+  r = fact(5) + twice(3);
+}
+
+function twice(x: int) returns (y: int)
+{
+  y = x + x;
+}
+--- ожидается
+function fact(n: int) returns (r: int)
+function main() returns (r: int)
+function twice(x: int) returns (y: int)
+
+=== несколько результатов и вызов как оператор
+function divmod(a: int, b: int) returns (q: int, r: int)
+  requires b > 0
+  ensures a == q * b + r
+{
+  q = a / b;
+  r = a % b;
+}
+
+function log(x: int) returns ()
+{
+}
+
+function main() returns ()
+{
+  divmod(7, 2);
+  log(1);
+}
+--- ожидается
+function divmod(a: int, b: int) returns (q: int, r: int)
+function log(x: int) returns ()
+function main() returns ()
+
+=== одно имя в соседних блоках
+function f(n: int) returns (s: int)
+{
+  s = 0;
+  {
+    var i: int = 0;
+    s = s + i;
+  }
+  {
+    var i: bool = true;
+    if (i) s = s + 1;
+  }
+}
+--- ожидается
+function f(n: int) returns (s: int)
+  local i: int @5:5
+  local i: bool @9:5
+
+=== requires видит параметры, ensures — параметры и результаты
+function abs(x: int) returns (y: int)
+  requires x > -1000 && x < 1000
+  ensures y >= 0 && (y == x || y == -x)
+{
+  if (x < 0) y = -x; else y = x;
+}
+--- ожидается
+function abs(x: int) returns (y: int)
+
+=== сравнение на равенство для int, bool и массивов
+function eq(a: int[], b: int[], p: bool, q: bool) returns (r: bool)
+{
+  r = a == b && p != q && length(a) == length(b);
+}
+--- ожидается
+function eq(a: int[], b: int[], p: bool, q: bool) returns (r: bool)
+
+=== условия циклов и проверок
+function loop(n: int) returns (k: int)
+  requires n >= 0
+  ensures k == n
+{
+  k = 0;
+  while (k < n)
+    invariant 0 <= k && k <= n
+    invariant !(k > n)
+  {
+    assume k >= 0;
+    k = k + 1;
+  }
+  assert k == n;
+}
+--- ожидается
+function loop(n: int) returns (k: int)
+
+=== переприсваивание параметра
+function dec(n: int) returns ()
+{
+  while (n > 0) n = n - 1;
+}
+--- ожидается
+function dec(n: int) returns ()
+
+=== вывод типа из результата вызова
+function mk(n: int) returns (a: int[])
+{
+}
+
+function use(n: int) returns (r: int)
+{
+  var arr = mk(n);
+  var x;
+  x = arr[0] + length(arr);
+  r = x;
+}
+--- ожидается
+function mk(n: int) returns (a: int[])
+function use(n: int) returns (r: int)
+  local arr: int[] @7:3 (выведен)
+  local x: int @8:3 (выведен)
